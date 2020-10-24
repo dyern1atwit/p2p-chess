@@ -1,7 +1,6 @@
 package edu.wit.shepherdm1dyern1.p2pchess;
 import javafx.application.*;
 import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
 import javafx.scene.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
