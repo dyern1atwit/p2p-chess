@@ -87,7 +87,7 @@ public class Main extends Application {
     }
 
     //gets node given mouseclick event
-    public Node getNode (MouseEvent event, GridPane grid) {
+    public Node getNode (MouseEvent event) {
         return event.getPickResult().getIntersectedNode();
     }
 
@@ -102,6 +102,7 @@ public class Main extends Application {
         }
     }
 
+    //creates menu scene and defines what buttons do, etc
     public Scene createMenu (){
         HBox startJoin = new HBox();
 
@@ -129,6 +130,7 @@ public class Main extends Application {
         return new Scene(startJoin, 500, 500);
     }
 
+    //creates main chessboard/game scene and defines what buttons do, etc
     public Scene createChessBoard(){
         BorderPane root = new BorderPane();
         StackPane stack = new StackPane();
@@ -148,7 +150,7 @@ public class Main extends Application {
             }
         }
 
-        boardGrid.setOnMouseClicked(event -> greenBorder(getNode(event, boardGrid)));
+        boardGrid.setOnMouseClicked(event -> greenBorder(getNode(event)));
 
         boardControls.getChildren().addAll(boardGrid, menuButton);
         stack.getChildren().addAll(boardControls);
