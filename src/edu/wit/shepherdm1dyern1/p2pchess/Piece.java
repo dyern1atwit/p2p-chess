@@ -19,11 +19,6 @@ abstract class Piece
         this.xPos = x;
         this.yPos = y;
     }
-
-    // abstract methods which will be
-    // implemented by its subclass(es)
-    abstract public double area();
-    abstract public void draw();
 }
 
 class Queen extends Piece
