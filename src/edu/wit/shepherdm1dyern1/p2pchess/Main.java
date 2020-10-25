@@ -115,7 +115,7 @@ public class Main extends Application {
         Button join = new Button("Join Game:");
         join.setPrefSize(100, 20);
 
-        Label ipLab = new Label("IP Address:");
+        Label ipLab = new Label("IP Address and port:");
         TextField ipField = new TextField ();
 
         startJoin.getChildren().addAll(create, portLab, portField, join, ipLab, ipField);
