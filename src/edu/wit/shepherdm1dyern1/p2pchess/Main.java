@@ -46,16 +46,15 @@ public class Main extends Application {
     }
 
     //takes port and game scene, will be used later to handle creating new game on given port
-    public void createGame (TextField port, Scene game) throws Exception {
+    public void createGame (TextField port, Scene game) {
         this.playerColor = "white";
         this.stage.setScene(game);
         System.out.println(port.getText());
         port.clear();
-        ;
     }
 
     //takes ip and game scene, will be used later to handle connecting to existing game
-    public void joinGame (TextField ip, Scene game) throws Exception {
+    public void joinGame (TextField ip, Scene game) {
         this.playerColor = "black";
         boardGrid.setRotate(180);
         for (String key : blackSprites.keySet()) {
@@ -132,7 +131,7 @@ public class Main extends Application {
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on)
     public void movePiece(Node piece, Node dest){           //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING MOVING NODES
-        piece = (Node) piece.getParent();
+        piece = piece.getParent();
         StackPane sourceStack = (StackPane) piece.getParent();
         sourceStack.getChildren().remove(piece);
 
@@ -144,7 +143,7 @@ public class Main extends Application {
     //helper method to handle click events on nodes
     public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
         Node clickedNode = getNode(event);
-        if (playerColor.equals("black") && blackSprites.contains((Node) clickedNode.getParent())){
+        if (playerColor.equals("black") && blackSprites.contains(clickedNode.getParent())){
                 if (this.selectedNode==null){
                     greenBorder(clickedNode);
                     this.selectedNode = clickedNode;
@@ -154,7 +153,7 @@ public class Main extends Application {
                     this.selectedNode = null;
                 }
         }
-        else if(playerColor.equals("white") && whiteSprites.contains((Node) clickedNode.getParent())) {
+        else if(playerColor.equals("white") && whiteSprites.contains(clickedNode.getParent())) {
             if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
@@ -170,7 +169,7 @@ public class Main extends Application {
         }
         else{
             System.out.println("no piece selected");
-            if (playerColor.equals("black") && whiteSprites.contains((Node) clickedNode.getParent())){
+            if (playerColor.equals("black") && whiteSprites.contains(clickedNode.getParent())){
                 System.out.println("Not your Piece");
             }
         }
@@ -190,74 +189,210 @@ public class Main extends Application {
             if (file.isFile()) {
 
                 String img = file.getName();
-
                 img = img.replace("_", " ");
                 img = img.replace(".png", "");
-                ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                surfaceRect.setStrokeWidth(2);
-                StackPane piece = new StackPane();
-                piece.getChildren().addAll(image, surfaceRect);
-                if(img.substring(0, 5).equals("Black")){
-                    if(img.substring(6, 8).equals("Pa")){
+
+
+
+                if(img.startsWith("Black")){
+                    if(img.startsWith("Pa", 6)){
                         for(int i=1; i<=8; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.blackSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Bi")){
+                    else if(img.startsWith("Bi", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.blackSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Kn")){
+                    else if(img.startsWith("Kn", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.blackSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Ro")){
+                    else if(img.startsWith("Ro", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.blackSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Ki")){
+                    else if(img.startsWith("Ki", 6)){
+                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                        surfaceRect.setStrokeWidth(2);
+                        StackPane piece = new StackPane();
+                        piece.getChildren().addAll(image, surfaceRect);
                         this.blackSprites.put(img, piece);
                     }
-                    else if(img.substring(6, 8).equals("Qu")){
+                    else if(img.startsWith("Qu", 6)){
+                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                        surfaceRect.setStrokeWidth(2);
+                        StackPane piece = new StackPane();
+                        piece.getChildren().addAll(image, surfaceRect);
                         this.blackSprites.put(img, piece);
 
                     }
                 }
                 else{
-                    if(img.substring(6, 8).equals("Pa")){
+                    if(img.startsWith("Pa", 6)){
                         for(int i=1; i<=8; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.whiteSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Bi")){
+                    else if(img.startsWith("Bi", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.whiteSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Kn")){
+                    else if(img.startsWith("Kn", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.whiteSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Ro")){
+                    else if(img.startsWith("Ro", 6)){
                         for(int i=1; i<=2; i++){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
                             this.whiteSprites.put(img+" "+i, piece);
                         }
                     }
-                    else if(img.substring(6, 8).equals("Ki")){
+                    else if(img.startsWith("Ki", 6)){
+                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                        surfaceRect.setStrokeWidth(2);
+                        StackPane piece = new StackPane();
+                        piece.getChildren().addAll(image, surfaceRect);
                         this.whiteSprites.put(img, piece);
                     }
-                    else if(img.substring(6, 8).equals("Qu")){
+                    else if(img.startsWith("Qu", 6)){
+                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                        surfaceRect.setStrokeWidth(2);
+                        StackPane piece = new StackPane();
+                        piece.getChildren().addAll(image, surfaceRect);
                         this.whiteSprites.put(img, piece);
                     }
                 }
             }
         }
+
+    }
+
+    public void placePieces(){
+        StackPane gridStack = (StackPane) getNode(0, 0, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Rook 1"));
+
+        gridStack = (StackPane) getNode(0, 7, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Rook 2"));
+
+
+        gridStack = (StackPane) getNode(0, 1, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Knight 1"));
+
+        gridStack = (StackPane) getNode(0, 6, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Knight 2"));
+
+        gridStack = (StackPane) getNode(0, 2, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Bishop 1"));
+
+        gridStack = (StackPane) getNode(0, 5, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Bishop 2"));
+
+        gridStack = (StackPane) getNode(0, 3, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black Queen"));
+
+        gridStack = (StackPane) getNode(0, 4, boardGrid);
+        gridStack.getChildren().add(blackSprites.get("Black King"));
+
+
+        for(int i = 0; i<8; i++){
+            gridStack = (StackPane) getNode(1, i, boardGrid);
+            gridStack.getChildren().add(blackSprites.get("Black Pawn " + (i + 1)));
+        }
+
+        gridStack = (StackPane) getNode(7, 0, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Rook 1"));
+
+        gridStack = (StackPane) getNode(7, 7, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Rook 2"));
+
+        gridStack = (StackPane) getNode(7, 1, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Knight 1"));
+
+        gridStack = (StackPane) getNode(7, 6, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Knight 2"));
+
+        gridStack = (StackPane) getNode(7, 2, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Bishop 1"));
+
+        gridStack = (StackPane) getNode(7, 5, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Bishop 2"));
+
+        gridStack = (StackPane) getNode(7, 4, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White Queen"));
+
+        gridStack = (StackPane) getNode(7, 3, boardGrid);
+        gridStack.getChildren().add(whiteSprites.get("White King"));
+
+
+        for(int i = 0; i<8; i++){
+            gridStack = (StackPane) getNode(6, i, boardGrid);
+            gridStack.getChildren().add(whiteSprites.get("White Pawn " + (i + 1)));
+        }
+
+
+
+
 
     }
 
@@ -317,8 +452,8 @@ public class Main extends Application {
 
     //creates main chessboard/game scene and defines what buttons do, etc
     public Scene createChessBoard() throws Exception {
-        this.blackSprites = new Hashtable<String, Node>();
-        this.whiteSprites = new Hashtable<String, Node>();
+        this.blackSprites = new Hashtable<>();
+        this.whiteSprites = new Hashtable<>();
 
         BorderPane root = new BorderPane();
         StackPane stack = new StackPane();
@@ -342,13 +477,12 @@ public class Main extends Application {
 
         this.loadImages();
 
-        StackPane gridStack = (StackPane) getNode(0, 0, boardGrid);
-        gridStack.getChildren().add(blackSprites.get("Black Queen"));
-
         boardGrid.setOnMouseClicked(this::handleClickEvent);
 
-        boardControls.getChildren().addAll(boardGrid/*, menuButton*/);
+        boardControls.getChildren().addAll(boardGrid);
         stack.getChildren().addAll(boardControls);
+
+        this.placePieces();
 
         root.setCenter(stack);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
