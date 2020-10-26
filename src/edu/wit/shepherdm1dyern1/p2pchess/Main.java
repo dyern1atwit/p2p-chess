@@ -1,4 +1,6 @@
 package edu.wit.shepherdm1dyern1.p2pchess;
+
+import javafx.scene.image.*;
 import javafx.application.*;
 import javafx.collections.*;
 import javafx.geometry.Insets;
@@ -10,6 +12,11 @@ import javafx.scene.paint.*;
 import javafx.scene.shape.*;
 import javafx.stage.*;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.Hashtable;
+
 public class Main extends Application {
     //public variables for easier helper access
     public GridPane boardGrid = new GridPane();
@@ -17,6 +24,9 @@ public class Main extends Application {
     public Scene chessBoard;
     public Scene menu;
     public Node selectedNode;
+    public Hashtable<String, Node> blackSprites;
+    public Hashtable<String, Node> whiteSprites;
+    public String playerColor;
 
     /*
     - do pieces
@@ -26,34 +36,47 @@ public class Main extends Application {
      */
 
     @Override
-    public void start(Stage primaryStage) {
+    public void start(Stage primaryStage) throws Exception {
         this.stage = primaryStage;
-        this.chessBoard = createChessBoard();
         this.menu = createMenu();
+        this.chessBoard = createChessBoard();
         this.stage.setTitle("Chess");
         this.stage.setScene(menu);
         this.stage.show();
     }
 
     //takes port and game scene, will be used later to handle creating new game on given port
-    public void createGame (TextField port, Scene game){
+    public void createGame (TextField port, Scene game) throws Exception {
+        this.playerColor = "white";
         this.stage.setScene(game);
         System.out.println(port.getText());
         port.clear();
+        ;
     }
 
     //takes ip and game scene, will be used later to handle connecting to existing game
-    public void joinGame (TextField ip, Scene game){
+    public void joinGame (TextField ip, Scene game) throws Exception {
+        this.playerColor = "black";
+        boardGrid.setRotate(180);
+        for (String key : blackSprites.keySet()) {
+            blackSprites.get(key).setRotate(180);
+        }
+        for (String key : whiteSprites.keySet()) {
+            whiteSprites.get(key).setRotate(180);
+        }
         this.stage.setScene(game);
         System.out.println(ip.getText());
         ip.clear();
     }
 
-    //takes menu scene, returns to menu, will be used later to disconnect
+    //takes menu scene, returns to menu, will be used later to disconnect - not used
+    /*
     public void toMenu(Scene menu){
         this.stage.setScene(menu);
     }
+    */
 
+    //removed due to event handler
     /*
     gets position of a node given a mouseclick event
     public int[] getGridPos (MouseEvent event, GridPane grid) {
@@ -67,6 +90,7 @@ public class Main extends Application {
     }
     unnecesary due to mouse handler
     */
+
     //gets position of node given node
     public int[] getGridPos (Node node, GridPane grid) {
         int[] pos = new int[2];
@@ -99,7 +123,7 @@ public class Main extends Application {
     public void greenBorder(Node node){
         Shape shape = (Shape) node;
         if(shape.getStroke()==Color.GREEN){
-                shape.setStroke(Color.BLACK);
+                shape.setStroke(Color.rgb(20, 20, 20, 1));
         }
         else {
             shape.setStroke(Color.GREEN);
@@ -108,8 +132,7 @@ public class Main extends Application {
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on)
     public void movePiece(Node piece, Node dest){           //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING MOVING NODES
-        System.out.print("moving");
-
+        piece = (Node) piece.getParent();
         StackPane sourceStack = (StackPane) piece.getParent();
         sourceStack.getChildren().remove(piece);
 
@@ -119,27 +142,123 @@ public class Main extends Application {
     }
 
     //helper method to handle click events on nodes
-    public void handleClickEvent(MouseEvent event){ //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
+    public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
         Node clickedNode = getNode(event);
-        if(this.selectedNode!=null){
-            if(clickedNode==this.selectedNode) {
-                greenBorder(clickedNode);
-                this.selectedNode = null;
-            }
-            else {
-                greenBorder(selectedNode);
-                movePiece(this.selectedNode, clickedNode);
-            }
+        if (playerColor.equals("black") && blackSprites.contains((Node) clickedNode.getParent())){
+                if (this.selectedNode==null){
+                    greenBorder(clickedNode);
+                    this.selectedNode = clickedNode;
+                }
+                else if (clickedNode == this.selectedNode) {
+                    greenBorder(clickedNode);
+                    this.selectedNode = null;
+                }
         }
-        else {
-            if(clickedNode instanceof Circle) {
+        else if(playerColor.equals("white") && whiteSprites.contains((Node) clickedNode.getParent())) {
+            if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
             }
-            else{
-                System.out.println("nope");
+            else if (clickedNode == this.selectedNode) {
+                greenBorder(clickedNode);
+                this.selectedNode = null;
             }
         }
+        else if (this.selectedNode!=null) {
+            greenBorder(selectedNode);
+            movePiece(this.selectedNode, clickedNode);
+        }
+        else{
+            System.out.println("no piece selected");
+            if (playerColor.equals("black") && whiteSprites.contains((Node) clickedNode.getParent())){
+                System.out.println("Not your Piece");
+            }
+        }
+    }
+
+    //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
+    public void loadImages() throws Exception {
+        ArrayList<ImageView> images = new ArrayList<>();
+        String basePath = ((new File("").getAbsolutePath()) + "\\src\\edu\\wit\\shepherdm1dyern1\\p2pchess\\images\\");
+
+        File folder = new File(basePath);
+        File[] listOfFiles = folder.listFiles();
+
+        assert listOfFiles != null;
+        for (File file : listOfFiles) {
+
+            if (file.isFile()) {
+
+                String img = file.getName();
+
+                img = img.replace("_", " ");
+                img = img.replace(".png", "");
+                ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                surfaceRect.setStrokeWidth(2);
+                StackPane piece = new StackPane();
+                piece.getChildren().addAll(image, surfaceRect);
+                if(img.substring(0, 5).equals("Black")){
+                    if(img.substring(6, 8).equals("Pa")){
+                        for(int i=1; i<=8; i++){
+                            this.blackSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Bi")){
+                        for(int i=1; i<=2; i++){
+                            this.blackSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Kn")){
+                        for(int i=1; i<=2; i++){
+                            this.blackSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Ro")){
+                        for(int i=1; i<=2; i++){
+                            this.blackSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Ki")){
+                        this.blackSprites.put(img, piece);
+                    }
+                    else if(img.substring(6, 8).equals("Qu")){
+                        this.blackSprites.put(img, piece);
+
+                    }
+                }
+                else{
+                    if(img.substring(6, 8).equals("Pa")){
+                        for(int i=1; i<=8; i++){
+                            this.whiteSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Bi")){
+                        for(int i=1; i<=2; i++){
+                            this.whiteSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Kn")){
+                        for(int i=1; i<=2; i++){
+                            this.whiteSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Ro")){
+                        for(int i=1; i<=2; i++){
+                            this.whiteSprites.put(img+" "+i, piece);
+                        }
+                    }
+                    else if(img.substring(6, 8).equals("Ki")){
+                        this.whiteSprites.put(img, piece);
+                    }
+                    else if(img.substring(6, 8).equals("Qu")){
+                        this.whiteSprites.put(img, piece);
+                    }
+                }
+            }
+        }
+
     }
 
     //creates menu scene and defines what buttons do, etc
@@ -162,50 +281,78 @@ public class Main extends Application {
         startJoin.setPadding(new Insets(5,5,5,5));
         startJoin.setSpacing(10);
 
-        create.setOnAction(e -> createGame(portField, chessBoard)); //CHANGE ME
-        join.setOnAction(e -> joinGame(ipField, chessBoard)); //CHANGE ME
+        create.setOnAction(e -> {
+            try {
+                createGame(portField, chessBoard);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
+        join.setOnAction(e -> {
+            try {
+                joinGame(ipField, chessBoard);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
 
-        create.setOnAction(e -> createGame(portField, chessBoard)); //CHANGE ME
-        join.setOnAction(e -> joinGame(ipField, chessBoard)); //CHANGE ME
+        create.setOnAction(e -> {
+            try {
+                createGame(portField, chessBoard);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
+        join.setOnAction(e -> {
+            try {
+                joinGame(ipField, chessBoard);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
+
 
         return new Scene(startJoin, 725, 500);
     }
 
     //creates main chessboard/game scene and defines what buttons do, etc
-    public Scene createChessBoard(){
+    public Scene createChessBoard() throws Exception {
+        this.blackSprites = new Hashtable<String, Node>();
+        this.whiteSprites = new Hashtable<String, Node>();
+
         BorderPane root = new BorderPane();
         StackPane stack = new StackPane();
         HBox boardControls = new HBox();
-        Button menuButton = new Button("Menu");
-        menuButton.setPrefSize(100, 20);
+        //Button menuButton = new Button("Menu");
+        //menuButton.setPrefSize(100, 20);
 
         for(int i = 0; i<8; i++){
             for(int j = 0; j<8; j++){
                 Rectangle rect = new Rectangle(75, 75, Color.WHITE);
-                rect.setStroke(Color.BLACK);
+                rect.setStroke(Color.rgb(20, 20, 20, 1));
                 rect.setStrokeWidth(2);
                 StackPane gridStack = new StackPane();
                 if ((i % 2 != 0 || j % 2 != 0) && (i % 2 == 0 || j % 2 == 0)) {
-                    rect.setFill(Color.BLACK);
+                    rect.setFill(Color.rgb(20, 20, 20, 1));
                 }
                 gridStack.getChildren().add(rect);
                 boardGrid.add(gridStack, i, j);
             }
         }
 
+        this.loadImages();
+
         StackPane gridStack = (StackPane) getNode(0, 0, boardGrid);
-        Circle TESTPIECE = new Circle(25, Color.RED);
-        TESTPIECE.setStroke(Color.BLACK);
-        gridStack.getChildren().add(TESTPIECE);
+        gridStack.getChildren().add(blackSprites.get("Black Queen"));
 
         boardGrid.setOnMouseClicked(this::handleClickEvent);
 
-        boardControls.getChildren().addAll(boardGrid, menuButton);
+        boardControls.getChildren().addAll(boardGrid/*, menuButton*/);
         stack.getChildren().addAll(boardControls);
 
         root.setCenter(stack);
-        menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
-        return new Scene(root, 1000, 1000);
+        //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
+        return new Scene(root, 616, 616);
     }
 
     public static void main(String[] args) {

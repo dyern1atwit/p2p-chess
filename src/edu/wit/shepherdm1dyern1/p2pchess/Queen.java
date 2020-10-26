@@ -1,3 +1,4 @@
+/*
 package edu.wit.shepherdm1dyern1.p2pchess.images;
 
 import edu.wit.shepherdm1dyern1.p2pchess.Piece;
@@ -9,3 +10,4 @@ class Queen extends Piece
         super(type, color, row, col, spriteFile);
     }
 }
+*/
