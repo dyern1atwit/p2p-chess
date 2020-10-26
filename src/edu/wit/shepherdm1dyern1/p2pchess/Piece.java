@@ -1,50 +1,30 @@
-/*
 package edu.wit.shepherdm1dyern1.p2pchess;
 
-abstract class Piece
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+public abstract class Piece
 {
     String pieceType;
-    int xPos;
-    int yPos;
+    String color;
+    int row;
+    int col;
+    ImageView sprite;
 
-    Piece(String type, int x, int y)
-    {
+
+    public Piece(String type, String color, int row, int col, String spriteFile) {
         this.pieceType = type;
-        this.xPos = x;
-        this.yPos = y;
+        this.color = color;
+        this.row = row;
+        this.col = col;
+        Image image = new Image(spriteFile);
+        sprite.setImage(image);
     }
 
-    public void moveTo(int x, int y)
+    public void setPos(int row, int col)
     {
-        this.xPos = x;
-        this.yPos = y;
+        this.row = row;
+        this.col = col;
     }
+
 }
-
-class Queen extends Piece
-{
-
-    int length, width;
-
-    // constructor
-    Queen(int length, int width, String name)
-    {
-
-        super(name);
-        this.length = length;
-        this.width = width;
-    }
-
-    @Override
-    public void draw()
-    {
-        System.out.println("Rectangle has been drawn ");
-    }
-
-    @Override
-    public double area()
-    {
-        return (double)(length*width);
-    }
-}
-*/
