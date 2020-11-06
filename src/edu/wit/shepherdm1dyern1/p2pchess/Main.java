@@ -178,7 +178,13 @@ public class Main extends Application {
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
     public void loadImages() throws Exception {
         ArrayList<ImageView> images = new ArrayList<>();
-        String basePath = ((new File("").getAbsolutePath()) + "\\src\\edu\\wit\\shepherdm1dyern1\\p2pchess\\images\\");
+        String basePath;
+        if(System.getProperty("os.name").startsWith("Linux")){
+            basePath = ((new File("").getAbsolutePath()) + "/src/edu/wit/shepherdm1dyern1/p2pchess/images/");
+        }
+        else{
+            basePath = ((new File("").getAbsolutePath()) + "\\src\\edu\\wit\\shepherdm1dyern1\\p2pchess\\images\\");
+        }
 
         File folder = new File(basePath);
         File[] listOfFiles = folder.listFiles();
