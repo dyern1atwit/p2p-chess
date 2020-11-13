@@ -27,6 +27,7 @@ public class Main extends Application {
     public Hashtable<String, Node> blackSprites;
     public Hashtable<String, Node> whiteSprites;
     public String playerColor;
+    public String turn = "white";
 
     /*
     - do pieces
@@ -138,12 +139,14 @@ public class Main extends Application {
         StackPane destStack = (StackPane) dest.getParent();
         destStack.getChildren().add(piece);
         this.selectedNode = null;
+
+        switchTurn();
     }
 
     //helper method to handle click events on nodes
     public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
         Node clickedNode = getNode(event);
-        if (playerColor.equals("black") && blackSprites.contains(clickedNode.getParent())){
+        if (playerColor.equals("black") && blackSprites.contains(clickedNode.getParent()) && turn.equals("black")){
                 if (this.selectedNode==null){
                     greenBorder(clickedNode);
                     this.selectedNode = clickedNode;
@@ -153,7 +156,7 @@ public class Main extends Application {
                     this.selectedNode = null;
                 }
         }
-        else if(playerColor.equals("white") && whiteSprites.contains(clickedNode.getParent())) {
+        else if(playerColor.equals("white") && whiteSprites.contains(clickedNode.getParent()) && turn.equals("white")) {
             if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
@@ -172,6 +175,19 @@ public class Main extends Application {
             if (playerColor.equals("black") && whiteSprites.contains(clickedNode.getParent())){
                 System.out.println("Not your Piece");
             }
+            else if (playerColor.equals("white") && blackSprites.contains(clickedNode.getParent())){
+                System.out.println("Not your Piece");
+            }
+        }
+    }
+
+    //helper method to swap which player's turn it is
+    public void switchTurn(){
+        if(turn.equals("white")){
+            turn="black";
+        }
+        else{
+            turn="white";
         }
     }
 
@@ -467,6 +483,24 @@ public class Main extends Application {
         //Button menuButton = new Button("Menu");
         //menuButton.setPrefSize(100, 20);
 
+        //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
+        Button switchPlayer = new Button("Switch player");
+        switchPlayer.setPrefSize(100, 20);
+
+        switchPlayer.setOnAction(e -> {
+            try {
+                if(playerColor.equals("white")){
+                    playerColor="black";
+                }
+                else if(playerColor.equals("black")){
+                    playerColor="white";
+                }
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        });
+
+
         for(int i = 0; i<8; i++){
             for(int j = 0; j<8; j++){
                 Rectangle rect = new Rectangle(75, 75, Color.WHITE);
@@ -491,6 +525,7 @@ public class Main extends Application {
         this.placePieces();
 
         root.setCenter(stack);
+        root.setRight(switchPlayer);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
         return new Scene(root, 616, 616);
     }
