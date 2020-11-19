@@ -14,8 +14,14 @@ import javafx.stage.*;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Stack;
+
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.*;
+
 
 public class Main extends Application {
     //public variables for easier helper access
@@ -24,8 +30,10 @@ public class Main extends Application {
     public Scene chessBoard;
     public Scene menu;
     public Node selectedNode;
-    public Hashtable<String, Node> blackSprites;
-    public Hashtable<String, Node> whiteSprites;
+    public BidiMap<String, Node> blackSprites;
+    public BidiMap<String, Node> whiteSprites;
+    public BidiMap<String, Node> blackTaken;
+    public BidiMap<String, Node> whiteTaken;
     public String playerColor;
     public String turn = "white";
 
@@ -130,33 +138,46 @@ public class Main extends Application {
         }
     }
 
-    //moves a node given piece (node being moved) and destination node (space/node clicked on)
-    public void movePiece(Node piece, Node dest){           //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING MOVING NODES
+    //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
+    public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
         piece = piece.getParent();
-        StackPane sourceStack = (StackPane) piece.getParent();
-        sourceStack.getChildren().remove(piece);
 
         StackPane destStack = (StackPane) dest.getParent();
-        destStack.getChildren().add(piece);
-        this.selectedNode = null;
+        StackPane finalDest = destStack;
 
+        if((!(blackSprites.getKey(destStack)==null)&&playerColor.equals("white"))||(!(whiteSprites.getKey(destStack)==null)&&playerColor.equals("black"))){
+            finalDest = (StackPane) destStack.getParent();
+            takePiece(destStack);
+        }
+
+        StackPane sourceStack = (StackPane) piece.getParent();
+        sourceStack.getChildren().remove(piece);
+        finalDest.getChildren().add(piece);
+
+        this.selectedNode = null;
         switchTurn();
+    }
+
+    //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap - STUB, REQUIRES COMPLETION BY NICK
+    public void takePiece(Node taken){
+        //implement piece taking here
     }
 
     //helper method to handle click events on nodes
     public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
         Node clickedNode = getNode(event);
-        if (playerColor.equals("black") && blackSprites.contains(clickedNode.getParent()) && turn.equals("black")){
-                if (this.selectedNode==null){
-                    greenBorder(clickedNode);
-                    this.selectedNode = clickedNode;
-                }
-                else if (clickedNode == this.selectedNode) {
-                    greenBorder(clickedNode);
-                    this.selectedNode = null;
-                }
+
+        if (playerColor.equals("black") && blackSprites.containsValue(clickedNode.getParent()) && turn.equals("black")){
+            if (this.selectedNode==null){
+                greenBorder(clickedNode);
+                this.selectedNode = clickedNode;
+            }
+            else if (clickedNode == this.selectedNode) {
+                greenBorder(clickedNode);
+                this.selectedNode = null;
+            }
         }
-        else if(playerColor.equals("white") && whiteSprites.contains(clickedNode.getParent()) && turn.equals("white")) {
+        else if(playerColor.equals("white") && whiteSprites.containsValue(clickedNode.getParent()) && turn.equals("white")) {
             if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
@@ -171,11 +192,13 @@ public class Main extends Application {
             movePiece(this.selectedNode, clickedNode);
         }
         else{
-            System.out.println("no piece selected");
-            if (playerColor.equals("black") && whiteSprites.contains(clickedNode.getParent())){
+            if(!(whiteSprites.containsValue(clickedNode.getParent())||blackSprites.containsValue(clickedNode.getParent()))){
+                System.out.println("no piece selected");
+            }
+            else if (playerColor.equals("black") && whiteSprites.containsValue(clickedNode.getParent())){
                 System.out.println("Not your Piece");
             }
-            else if (playerColor.equals("white") && blackSprites.contains(clickedNode.getParent())){
+            else if (playerColor.equals("white") && blackSprites.containsValue(clickedNode.getParent())){
                 System.out.println("Not your Piece");
             }
         }
@@ -189,10 +212,11 @@ public class Main extends Application {
         else{
             turn="white";
         }
+        System.out.println("switched turn to "+turn);
     }
 
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
-    public void loadImages() throws Exception {
+    public void loadNodes() throws Exception {
         ArrayList<ImageView> images = new ArrayList<>();
         String basePath;
         if(System.getProperty("os.name").startsWith("Linux")){
@@ -219,46 +243,22 @@ public class Main extends Application {
                 if(img.startsWith("Black")){
                     if(img.startsWith("Pa", 6)){
                         for(int i=1; i<=8; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img+" "+i, piece);
+                            makeBlackNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Bi", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img+" "+i, piece);
+                            makeBlackNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Kn", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img+" "+i, piece);
+                            makeBlackNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Ro", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img+" "+i, piece);
+                            makeBlackNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Ki", 6)){
@@ -284,46 +284,22 @@ public class Main extends Application {
                 else{
                     if(img.startsWith("Pa", 6)){
                         for(int i=1; i<=8; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img+" "+i, piece);
+                            makeWhiteNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Bi", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img+" "+i, piece);
+                            makeWhiteNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Kn", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img+" "+i, piece);
+                            makeWhiteNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Ro", 6)){
                         for(int i=1; i<=2; i++){
-                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                            surfaceRect.setStrokeWidth(2);
-                            StackPane piece = new StackPane();
-                            piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img+" "+i, piece);
+                            makeWhiteNode(basePath, file, img, i);
                         }
                     }
                     else if(img.startsWith("Ki", 6)){
@@ -350,6 +326,29 @@ public class Main extends Application {
 
     }
 
+    //helper method to generate a white piece node with image etc
+    private void makeWhiteNode(String basePath, File file, String img, int i) throws FileNotFoundException {
+        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+        Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
+        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+        surfaceRect.setStrokeWidth(2);
+        StackPane piece = new StackPane();
+        piece.getChildren().addAll(image, surfaceRect);
+        this.whiteSprites.put(img+" "+i, piece);
+    }
+
+    //helper method to generate a black piece node with image etc
+    private void makeBlackNode(String basePath, File file, String img, int i) throws FileNotFoundException {
+        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+        Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
+        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+        surfaceRect.setStrokeWidth(2);
+        StackPane piece = new StackPane();
+        piece.getChildren().addAll(image, surfaceRect);
+        this.blackSprites.put(img+" "+i, piece);
+    }
+
+    //places generated pieces in correct places on board
     public void placePieces(){
         StackPane gridStack = (StackPane) getNode(0, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Rook 1"));
@@ -474,8 +473,10 @@ public class Main extends Application {
 
     //creates main chessboard/game scene and defines what buttons do, etc
     public Scene createChessBoard() throws Exception {
-        this.blackSprites = new Hashtable<>();
-        this.whiteSprites = new Hashtable<>();
+        this.blackSprites = new DualHashBidiMap<>(){};
+        this.whiteSprites = new DualHashBidiMap<>();
+        this.blackTaken = new DualHashBidiMap<>(){};
+        this.whiteTaken = new DualHashBidiMap<>();
 
         BorderPane root = new BorderPane();
         StackPane stack = new StackPane();
@@ -486,18 +487,14 @@ public class Main extends Application {
         //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
         Button switchPlayer = new Button("Switch player");
         switchPlayer.setPrefSize(100, 20);
-
         switchPlayer.setOnAction(e -> {
-            try {
-                if(playerColor.equals("white")){
-                    playerColor="black";
-                }
-                else if(playerColor.equals("black")){
-                    playerColor="white";
-                }
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
+            switchTurn();
+        });
+        //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
+        Button printPlayer = new Button("Print player");
+        printPlayer.setPrefSize(100, 20);
+        printPlayer.setOnAction(e -> {
+            System.out.println(turn);
         });
 
 
@@ -515,7 +512,7 @@ public class Main extends Application {
             }
         }
 
-        this.loadImages();
+        this.loadNodes();
 
         boardGrid.setOnMouseClicked(this::handleClickEvent);
 
@@ -525,7 +522,11 @@ public class Main extends Application {
         this.placePieces();
 
         root.setCenter(stack);
-        root.setRight(switchPlayer);
+
+
+        VBox testbuttons = new VBox();
+        testbuttons.getChildren().addAll(switchPlayer, printPlayer);
+        root.setRight(testbuttons);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
         return new Scene(root, 616, 616);
     }
