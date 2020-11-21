@@ -15,8 +15,8 @@ import javafx.stage.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
@@ -36,6 +36,7 @@ public class Main extends Application {
     public BidiMap<String, Node> whiteTaken;
     public String playerColor;
     public String turn = "white";
+    public ArrayList<int[]> currentValid;
 
     /*
     - do pieces
@@ -99,18 +100,33 @@ public class Main extends Application {
     unnecesary due to mouse handler
     */
 
+
+    /*
+    ^^^^^^^^^^^^^^^^^^^^^^^^
+    Stage creation and stuff
+    Getter/helper methods
+    VVVVVVVVVVVVVVVVVVVVVV
+     */
+
     //gets position of node given node
     public int[] getGridPos (Node node, GridPane grid) {
         int[] pos = new int[2];
         if (node != grid) {
-            pos[0] = GridPane.getColumnIndex(node.getParent());
-            pos[1] = GridPane.getRowIndex(node.getParent());
+            if(GridPane.getRowIndex(node.getParent())!=null){
+                pos[1] = GridPane.getRowIndex(node.getParent());
+                pos[0] = GridPane.getColumnIndex(node.getParent());
+            }
+            else{
+                pos[1] = GridPane.getRowIndex(node.getParent().getParent());
+                pos[0] = GridPane.getColumnIndex(node.getParent().getParent());
+            }
+
         }
         return pos;
     }
 
     //gets node given row and column values
-    public Node getNode (int row, int column, GridPane grid) {
+    public Node getNode (int column, int row, GridPane grid) {
         Node result = null;
         ObservableList<Node> gridNodes = grid.getChildren();
         for (Node node : gridNodes) {
@@ -127,6 +143,53 @@ public class Main extends Application {
         return event.getPickResult().getIntersectedNode();
     }
 
+    //helper method to handle click events on nodes
+    public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
+        Node clickedNode = getNode(event);
+
+        if (playerColor.equals("black") && blackSprites.containsValue(clickedNode.getParent()) && turn.equals("black")){
+            if (this.selectedNode==null){
+                greenBorder(clickedNode);
+                this.selectedNode = clickedNode;
+                getMoves(this.selectedNode.getParent(), boardGrid, "black");
+            }
+            else if (clickedNode == this.selectedNode) {
+                blackBorders();
+                this.selectedNode = null;
+            }
+        }
+        else if(playerColor.equals("white") && whiteSprites.containsValue(clickedNode.getParent()) && turn.equals("white")) {
+            if (this.selectedNode==null){
+                greenBorder(clickedNode);
+                this.selectedNode = clickedNode;
+                getMoves(this.selectedNode.getParent(), boardGrid, "white");
+            }
+            else if (clickedNode == this.selectedNode) {
+                blackBorders();
+                this.selectedNode = null;
+            }
+        }
+        else if (this.selectedNode!=null&&(checkFor(getGridPos(clickedNode,boardGrid)))){
+            blackBorders();
+            movePiece(this.selectedNode, clickedNode);
+        }
+        else{
+            if ((playerColor.equals("black") && whiteSprites.containsValue(clickedNode.getParent()))||(playerColor.equals("white") && blackSprites.containsValue(clickedNode.getParent()))){
+                System.out.println("Not your Piece");
+            }
+        }
+    }
+
+    //checks current valid for coords
+    public boolean checkFor(int[] coords){
+        for(int[] i:currentValid){
+            if(i[0]==coords[0]&&i[1]==coords[1]){
+                return true;
+            }
+        }
+        return false;
+    }
+
     //sets border of given node to green if not already and black if green already
     public void greenBorder(Node node){
         Shape shape = (Shape) node;
@@ -137,6 +200,44 @@ public class Main extends Application {
             shape.setStroke(Color.GREEN);
         }
     }
+
+    //sets border of given node to red if not already and black if red already
+    public void redBorder(Node node){
+        Shape shape = (Shape) node;
+        if(shape.getStroke()==Color.RED){
+            shape.setStroke(Color.rgb(20, 20, 20, 1));
+        }
+        else {
+            shape.setStroke(Color.RED);
+        }
+    }
+
+    //resets all borders to black
+    public void blackBorders(){
+        for(int i=0;i<8;i++){
+            for(int j=0;j<8;j++){
+                StackPane stack = (StackPane) getNode(i,j,boardGrid);
+                Shape shape = (Shape) stack.getChildren().get(0);
+                shape.setStroke(Color.rgb(20, 20, 20, 1));
+                if(stack.getChildren().size()>1){
+                    stack = (StackPane) stack.getChildren().get(1);
+                    shape = (Shape) stack.getChildren().get(1);
+                    shape.setStroke(Color.rgb(20, 20, 20, 1));
+                }
+
+            }
+        }
+    }
+
+
+    /*
+    ^^^^^^^^^^^^^^^^^^^^^
+    Getter/helper methods
+    Actual chess stuff (piece movement, taking, move checking, etc)
+    VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+    */
+
+
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
@@ -163,46 +264,56 @@ public class Main extends Application {
         //implement piece taking here
     }
 
-    //helper method to handle click events on nodes
-    public void handleClickEvent(MouseEvent event) { //WILL NEED REWORK FOR PIECE OBJECTS - ONLY TESTING SELECTING/MOVING NODES
-        Node clickedNode = getNode(event);
+    //IMPORTANT method that determines where a clicked piece can move and highlights those spaces NOT FINISHED
+    public ArrayList<int[]> getMoves(Node piece, GridPane grid, String player) {
 
-        if (playerColor.equals("black") && blackSprites.containsValue(clickedNode.getParent()) && turn.equals("black")){
-            if (this.selectedNode==null){
-                greenBorder(clickedNode);
-                this.selectedNode = clickedNode;
-            }
-            else if (clickedNode == this.selectedNode) {
-                greenBorder(clickedNode);
-                this.selectedNode = null;
-            }
+        String pieceName;
+
+        if (whiteSprites.getKey(piece) != null) {
+            pieceName = whiteSprites.getKey(piece);
+        } else {
+            pieceName = blackSprites.getKey(piece);
         }
-        else if(playerColor.equals("white") && whiteSprites.containsValue(clickedNode.getParent()) && turn.equals("white")) {
-            if (this.selectedNode==null){
-                greenBorder(clickedNode);
-                this.selectedNode = clickedNode;
-            }
-            else if (clickedNode == this.selectedNode) {
-                greenBorder(clickedNode);
-                this.selectedNode = null;
-            }
+        String nameStart = pieceName.substring(6, 8);
+        if (nameStart.equals("Pa")){
+            currentValid = pawnMoves(piece, player);
         }
-        else if (this.selectedNode!=null) {
-            greenBorder(selectedNode);
-            movePiece(this.selectedNode, clickedNode);
+        else if (nameStart.equals("Ro")){
+            currentValid = rookMoves(piece, player);
+        }
+        else if (nameStart.equals("Qu")){
+            currentValid = queenMoves(piece, player);
+        }
+        else if (nameStart.equals("Ki")){
+            currentValid = kingMoves(piece, player);
+        }
+        else if (nameStart.equals("Bi")){
+            currentValid = bishopMoves(piece, player);
+        }
+        else if (nameStart.equals("Kn")){
+            currentValid = knightMoves(piece, player);
+        }
+        return new ArrayList<>();
+    }
+
+
+
+    //helper method to find if a piece can take another piece
+    public boolean canTake(Node taker, Node taken){
+        if((whiteSprites.containsValue(taker)&&blackSprites.containsValue(taken))||(blackSprites.containsValue(taker)&&whiteSprites.containsValue(taken))){
+            return true;
         }
         else{
-            if(!(whiteSprites.containsValue(clickedNode.getParent())||blackSprites.containsValue(clickedNode.getParent()))){
-                System.out.println("no piece selected");
-            }
-            else if (playerColor.equals("black") && whiteSprites.containsValue(clickedNode.getParent())){
-                System.out.println("Not your Piece");
-            }
-            else if (playerColor.equals("white") && blackSprites.containsValue(clickedNode.getParent())){
-                System.out.println("Not your Piece");
-            }
+            return false;
         }
     }
+
+    //STUB METHOD FOR PAWN PROMOTION - requires completion by Nick
+    public void promotePawn(Node pawn){
+        //stub
+    }
+
+
 
     //helper method to swap which player's turn it is
     public void switchTurn(){
@@ -214,6 +325,574 @@ public class Main extends Application {
         }
         System.out.println("switched turn to "+turn);
     }
+
+
+    //HOW PIECES MOVE BELOW
+
+    //pawn movement method
+    public ArrayList<int[]> pawnMoves(Node pawn, String player){
+        int[] pos = new int[]{getGridPos(pawn, boardGrid)[0], getGridPos(pawn, boardGrid)[1]};
+
+        ArrayList<int[]> valid = new ArrayList<>();
+
+        if(player.equals("white")){
+            int spaces;
+            if(pos[1]==6){
+                spaces = 2;
+            }
+            else{
+                spaces = 1;
+            }
+            for(int i=0; i<spaces;i++){
+                pos[1]--;
+                if(pos[1]>=0){
+                    StackPane stack = (StackPane) getNode(pos[0], pos[1], boardGrid);
+                    if(!(stack.getChildren().size()>1)){
+                        valid.add(new int[]{pos[0], pos[1]});
+                        greenBorder(stack.getChildren().get(0));
+                    }
+                    if((pos[0]-1)>=0){
+                        stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
+                    }
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                        valid.add(new int[]{pos[0]-1, pos[1]});
+                        StackPane taking = (StackPane) stack.getChildren().get(1);
+                        redBorder(taking.getChildren().get(1));
+                    }
+                    if((pos[0]+1)<=7){
+                        stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
+                    }
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                        valid.add(new int[]{pos[0]+1, pos[1]});
+                        StackPane taking = (StackPane) stack.getChildren().get(1);
+                        redBorder(taking.getChildren().get(1));
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        else{
+            int spaces;
+            if(pos[0]==6){
+                spaces = 2;
+            }
+            else{
+                spaces = 1;
+            }
+            for(int i=0; i<spaces;i++){
+                pos[1]++;
+                if(pos[1]<=7){
+                    StackPane stack = (StackPane) getNode(pos[0], pos[1], boardGrid);
+                    if(!(stack.getChildren().size()>1)){
+                        valid.add(new int[]{pos[0], pos[1]});
+                        greenBorder(stack.getChildren().get(0));
+                    }
+                    if((pos[0]-1)>=0){
+                        stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
+                    }
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                        valid.add(new int[]{pos[0]-1, pos[1]});
+                        StackPane taking = (StackPane) stack.getChildren().get(1);
+                        redBorder(taking.getChildren().get(1));
+                    }
+                    if((pos[0]+1)<=7){
+                        stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
+                    }
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                        valid.add(new int[]{pos[0]+1, pos[1]});
+                        StackPane taking = (StackPane) stack.getChildren().get(1);
+                        redBorder(taking.getChildren().get(1));
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+        }
+        return valid;
+    }
+
+    //bishop movement method
+    public ArrayList<int[]> bishopMoves(Node bishop, String player){
+        ArrayList<int[]> valid = new ArrayList<>();
+        int[] pos = new int[]{getGridPos(bishop, boardGrid)[0], getGridPos(bishop, boardGrid)[1]};
+        int[] tmpPos = new int[]{getGridPos(bishop, boardGrid)[0], getGridPos(bishop, boardGrid)[1]};
+        StackPane stack;
+        StackPane taking;
+
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7&&tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[0]++; tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(bishop, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7&&tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[0]++; tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(bishop, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7&&tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[0]--; tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(bishop, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7&&tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[0]--; tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(bishop, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        return valid;
+    }
+
+    //rook movement method
+    public ArrayList<int[]> rookMoves(Node rook, String player){
+        ArrayList<int[]> valid = new ArrayList<>();
+        int[] pos = new int[]{getGridPos(rook, boardGrid)[0], getGridPos(rook, boardGrid)[1]};
+        int[] tmpPos = new int[]{getGridPos(rook, boardGrid)[0], getGridPos(rook, boardGrid)[1]};
+        StackPane stack;
+        StackPane taking;
+
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7){
+            tmpPos[0]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(rook, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7){
+            tmpPos[0]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(rook, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(rook, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(rook, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+
+        return valid;
+    }
+
+    //queen movement method
+    public ArrayList<int[]> queenMoves(Node queen, String player){
+        ArrayList<int[]> valid = new ArrayList<>();
+        int[] pos = new int[]{getGridPos(queen, boardGrid)[0], getGridPos(queen, boardGrid)[1]};
+        int[] tmpPos = new int[]{getGridPos(queen, boardGrid)[0], getGridPos(queen, boardGrid)[1]};
+        StackPane stack;
+        StackPane taking;
+        //diagonals (stolen from bishop)
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7&&tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[0]++; tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7&&tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[0]++; tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7&&tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[0]--; tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7&&tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[0]--; tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        //straight (stolen from rook)
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]+1>=0&&tmpPos[0]+1<=7){
+            tmpPos[0]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[0]-1>=0&&tmpPos[0]-1<=7){
+            tmpPos[0]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[1]+1>=0&&tmpPos[1]+1<=7){
+            tmpPos[1]++;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+        tmpPos[0]=pos[0];tmpPos[1]=pos[1];
+        while(tmpPos[1]-1>=0&&tmpPos[1]-1<=7){
+            tmpPos[1]--;
+            stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+            if(stack.getChildren().size()>1){
+                taking = (StackPane) stack.getChildren().get(1);
+                if(canTake(queen, taking)){
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                }
+                break;
+            }
+            greenBorder(stack.getChildren().get(0));
+            valid.add(new int[]{tmpPos[0], tmpPos[1]});
+        }
+
+        return valid;
+    }
+
+    //knight movement method
+    public ArrayList<int[]> knightMoves(Node knight, String player){
+        ArrayList<int[]> valid = new ArrayList<>();
+        int[] pos = new int[]{getGridPos(knight, boardGrid)[0], getGridPos(knight, boardGrid)[1]};
+        int[] tmpPos = new int[]{getGridPos(knight, boardGrid)[0], getGridPos(knight, boardGrid)[1]};
+        StackPane stack;
+        StackPane taking;
+
+        if(tmpPos[0]+2<=7){
+            tmpPos[0]+=2;
+            if((tmpPos[1]+1)<=7){
+                tmpPos[1]++;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+            tmpPos[1]=pos[1];
+            if((tmpPos[1]-1)>=0){
+                tmpPos[1]--;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+        }
+        tmpPos[0]=pos[0]; tmpPos[1]=pos[1];
+        if(tmpPos[0]-2>=0){
+            tmpPos[0]-=2;
+            if((tmpPos[1]+1)<=7){
+                tmpPos[1]++;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+            tmpPos[1]=pos[1];
+            if((tmpPos[1]-1)>=0){
+                tmpPos[1]--;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+        }
+        tmpPos[0]=pos[0]; tmpPos[1]=pos[1];
+        if(tmpPos[1]+2<=7){
+            tmpPos[1]+=2;
+            if((tmpPos[0]+1)<=7){
+                tmpPos[0]++;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+            tmpPos[0]=pos[0];
+            if((tmpPos[0]-1)>=0){
+                tmpPos[0]--;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+        }
+        tmpPos[0]=pos[0]; tmpPos[1]=pos[1];
+        if(tmpPos[1]-2>=0){
+            tmpPos[1]-=2;
+            if((tmpPos[0]+1)<=7){
+                tmpPos[0]++;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+            tmpPos[0]=pos[0];
+            if((tmpPos[0]-1)>=0){
+                tmpPos[0]--;
+                stack = (StackPane) getNode(tmpPos[0], tmpPos[1], boardGrid);
+                if(stack.getChildren().size()>1){
+                    taking = (StackPane) stack.getChildren().get(1);
+                    if(canTake(knight, taking)){
+                        redBorder(taking.getChildren().get(1));
+                        valid.add(new int[]{tmpPos[0], tmpPos[1]});
+                    }
+                }
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{tmpPos[0], tmpPos[1]});
+            }
+        }
+        return valid;
+    }
+
+    //king movement method
+    public ArrayList<int[]> kingMoves(Node king, String player){
+        int[] pos = new int[]{getGridPos(king, boardGrid)[0], getGridPos(king, boardGrid)[1]};
+        int[] tmpPos = new int[]{getGridPos(king, boardGrid)[0], getGridPos(king, boardGrid)[1]};
+        ArrayList<int[]> valid = new ArrayList<>();
+        tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1];
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1]-1;
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1]+1;
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]; tmpPos[1]=pos[1]+1;
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]; tmpPos[1]=pos[1]-1;
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1];
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1]-1;
+        kingHelper(king, tmpPos, valid, player);
+        tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1]+1;
+        kingHelper(king, tmpPos, valid, player);
+        return valid;
+    }
+
+    //helper method for circling the king
+    private void kingHelper(Node king, int[] pos, ArrayList<int[]> valid, String player) {
+        StackPane stack;
+        if(pos[0]>=0&&pos[0]<=7&&pos[1]>=0&&pos[1]<=7&&!checkCheck(new int[]{pos[0], pos[1]}, player)){
+            stack = (StackPane) getNode(pos[0], pos[1], boardGrid);
+            if(stack.getChildren().size()>1) {
+                if (canTake(king, stack.getChildren().get(1))) {
+                    StackPane taking = (StackPane) stack.getChildren().get(1);
+                    redBorder(taking.getChildren().get(1));
+                    valid.add(new int[]{pos[0], pos[1]});
+                }
+            }
+            else{
+                System.out.println("why");
+                greenBorder(stack.getChildren().get(0));
+                valid.add(new int[]{pos[0], pos[1]});
+            }
+        }
+    }
+
+
+    //returns true if given king is in check (for when king is moving and after each move, int[] used for ease of king movement, can overload later if needed)
+    public boolean checkCheck(int[] kingPos, String player){
+        //stub
+        return false;
+    }
+
+
+
+    /*
+    ^^^^^^^^^^^^^^^^^^^^^
+    Actual chess stuff (piece movement, taking, move checking, etc)
+    preload/creation stuff
+    VVVVVVVVVVVVVVVVVVVVV
+    */
+
+
+
+
+
+
+
+
+
+
+
+
 
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
     public void loadNodes() throws Exception {
@@ -353,61 +1032,61 @@ public class Main extends Application {
         StackPane gridStack = (StackPane) getNode(0, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Rook 1"));
 
-        gridStack = (StackPane) getNode(0, 7, boardGrid);
+        gridStack = (StackPane) getNode(7, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Rook 2"));
 
 
-        gridStack = (StackPane) getNode(0, 1, boardGrid);
+        gridStack = (StackPane) getNode(1, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Knight 1"));
 
-        gridStack = (StackPane) getNode(0, 6, boardGrid);
+        gridStack = (StackPane) getNode(6, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Knight 2"));
 
-        gridStack = (StackPane) getNode(0, 2, boardGrid);
+        gridStack = (StackPane) getNode(2, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Bishop 1"));
 
-        gridStack = (StackPane) getNode(0, 5, boardGrid);
+        gridStack = (StackPane) getNode(5, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Bishop 2"));
 
-        gridStack = (StackPane) getNode(0, 3, boardGrid);
+        gridStack = (StackPane) getNode(4, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Queen"));
 
-        gridStack = (StackPane) getNode(0, 4, boardGrid);
+        gridStack = (StackPane) getNode(3, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black King"));
 
 
         for(int i = 0; i<8; i++){
-            gridStack = (StackPane) getNode(1, i, boardGrid);
+            gridStack = (StackPane) getNode(i, 1, boardGrid);
             gridStack.getChildren().add(blackSprites.get("Black Pawn " + (i + 1)));
         }
 
-        gridStack = (StackPane) getNode(7, 0, boardGrid);
+        gridStack = (StackPane) getNode(0, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Rook 1"));
 
         gridStack = (StackPane) getNode(7, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Rook 2"));
 
-        gridStack = (StackPane) getNode(7, 1, boardGrid);
+        gridStack = (StackPane) getNode(1, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Knight 1"));
 
-        gridStack = (StackPane) getNode(7, 6, boardGrid);
+        gridStack = (StackPane) getNode(6, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Knight 2"));
 
-        gridStack = (StackPane) getNode(7, 2, boardGrid);
+        gridStack = (StackPane) getNode(2, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Bishop 1"));
 
-        gridStack = (StackPane) getNode(7, 5, boardGrid);
+        gridStack = (StackPane) getNode(5, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Bishop 2"));
 
-        gridStack = (StackPane) getNode(7, 4, boardGrid);
+        gridStack = (StackPane) getNode(3, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White Queen"));
 
-        gridStack = (StackPane) getNode(7, 3, boardGrid);
+        gridStack = (StackPane) getNode(4, 7, boardGrid);
         gridStack.getChildren().add(whiteSprites.get("White King"));
 
 
         for(int i = 0; i<8; i++){
-            gridStack = (StackPane) getNode(6, i, boardGrid);
+            gridStack = (StackPane) getNode(i, 6, boardGrid);
             gridStack.getChildren().add(whiteSprites.get("White Pawn " + (i + 1)));
         }
 
