@@ -10,14 +10,13 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.*;
 import javafx.scene.shape.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.*;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.*;
@@ -29,6 +28,7 @@ public class Main extends Application {
     public Stage stage;
     public Scene chessBoard;
     public Scene menu;
+    public Scene gameOverScene;
     public Node selectedNode;
     public BidiMap<String, Node> blackSprites;
     public BidiMap<String, Node> whiteSprites;
@@ -46,13 +46,35 @@ public class Main extends Application {
      */
 
     @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage){
         this.stage = primaryStage;
+        startGame();
+    }
+
+    //cleans up public variables and resets game
+    public void startGame() {
         this.menu = createMenu();
         this.chessBoard = createChessBoard();
         this.stage.setTitle("Chess");
         this.stage.setScene(menu);
         this.stage.show();
+    }
+
+    //cleans up before restart
+    public void restart(){
+        boardGrid = new GridPane();
+        chessBoard=null;
+        menu=null;
+        gameOverScene=null;
+        selectedNode=null;
+        blackSprites=null;
+        whiteSprites=null;
+        blackTaken=null;
+        whiteTaken=null;
+        playerColor=null;
+        turn = "white";
+        currentValid=null;
+        startGame();
     }
 
     //takes port and game scene, will be used later to handle creating new game on given port
@@ -272,35 +294,32 @@ public class Main extends Application {
             pieceName = blackSprites.getKey(piece);
         }
         String nameStart = pieceName.substring(6, 8);
-        if (nameStart.equals("Pa")){
-            currentValid = pawnMoves(piece, player);
-        }
-        else if (nameStart.equals("Ro")){
-            currentValid = rookMoves(piece, player);
-        }
-        else if (nameStart.equals("Qu")){
-            currentValid = queenMoves(piece, player);
-        }
-        else if (nameStart.equals("Ki")){
-            currentValid = kingMoves(piece, player);
-        }
-        else if (nameStart.equals("Bi")){
-            currentValid = bishopMoves(piece, player);
-        }
-        else if (nameStart.equals("Kn")){
-            currentValid = knightMoves(piece, player);
+        switch (nameStart) {
+            case "Pa":
+                currentValid = pawnMoves(piece, player);
+                break;
+            case "Ro":
+                currentValid = rookMoves(piece, player);
+                break;
+            case "Qu":
+                currentValid = queenMoves(piece, player);
+                break;
+            case "Ki":
+                currentValid = kingMoves(piece, player);
+                break;
+            case "Bi":
+                currentValid = bishopMoves(piece, player);
+                break;
+            case "Kn":
+                currentValid = knightMoves(piece, player);
+                break;
         }
         return new ArrayList<>();
     }
 
     //helper method to find if a piece can take another piece
     public boolean canTake(Node taker, Node taken){
-        if((whiteSprites.containsValue(taker)&&blackSprites.containsValue(taken))||(blackSprites.containsValue(taker)&&whiteSprites.containsValue(taken))){
-            return true;
-        }
-        else{
-            return false;
-        }
+        return (whiteSprites.containsValue(taker) && blackSprites.containsValue(taken)) || (blackSprites.containsValue(taker) && whiteSprites.containsValue(taken));
     }
 
     //STUB METHOD FOR PAWN PROMOTION - requires completion by Nick
@@ -858,7 +877,6 @@ public class Main extends Application {
         }
     }
 
-
     //returns true if given king is in check (for when king is moving and after each move, int[] used for ease of king movement, can overload later if needed)
     public boolean checkCheck(int[] kingPos, String player){
         //stub
@@ -872,8 +890,14 @@ public class Main extends Application {
     VVVVVVVVVVVVVVVVVVVVV
     */
 
+    //ends game
+    public void endGame(String result){
+        gameOver(result);
+        this.stage.setScene(gameOverScene);
+    }
+
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
-    public void loadNodes() throws Exception {
+    public void loadNodes() {
         ArrayList<ImageView> images = new ArrayList<>();
         String basePath;
         if(System.getProperty("os.name").startsWith("Linux")){
@@ -887,122 +911,136 @@ public class Main extends Application {
         File[] listOfFiles = folder.listFiles();
 
         assert listOfFiles != null;
-        for (File file : listOfFiles) {
+        try{
+            for (File file : listOfFiles) {
 
-            if (file.isFile()) {
+                if (file.isFile()) {
 
-                String img = file.getName();
-                img = img.replace("_", " ");
-                img = img.replace(".png", "");
+                    String img = file.getName();
+                    img = img.replace("_", " ");
+                    img = img.replace(".png", "");
 
 
 
-                if(img.startsWith("Black")){
-                    if(img.startsWith("Pa", 6)){
-                        for(int i=1; i<=8; i++){
-                            makeBlackNode(basePath, file, img, i);
+                    if(img.startsWith("Black")){
+                        if(img.startsWith("Pa", 6)){
+                            for(int i=1; i<=8; i++){
+                                makeBlackNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Bi", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeBlackNode(basePath, file, img, i);
+                        else if(img.startsWith("Bi", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeBlackNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Kn", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeBlackNode(basePath, file, img, i);
+                        else if(img.startsWith("Kn", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeBlackNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Ro", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeBlackNode(basePath, file, img, i);
+                        else if(img.startsWith("Ro", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeBlackNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Ki", 6)){
-                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                        surfaceRect.setStrokeWidth(2);
-                        StackPane piece = new StackPane();
-                        piece.getChildren().addAll(image, surfaceRect);
-                        this.blackSprites.put(img, piece);
-                    }
-                    else if(img.startsWith("Qu", 6)){
-                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                        surfaceRect.setStrokeWidth(2);
-                        StackPane piece = new StackPane();
-                        piece.getChildren().addAll(image, surfaceRect);
-                        this.blackSprites.put(img, piece);
+                        else if(img.startsWith("Ki", 6)){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
+                            this.blackSprites.put(img, piece);
+                        }
+                        else if(img.startsWith("Qu", 6)){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
+                            this.blackSprites.put(img, piece);
 
-                    }
-                }
-                else{
-                    if(img.startsWith("Pa", 6)){
-                        for(int i=1; i<=8; i++){
-                            makeWhiteNode(basePath, file, img, i);
                         }
                     }
-                    else if(img.startsWith("Bi", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeWhiteNode(basePath, file, img, i);
+                    else{
+                        if(img.startsWith("Pa", 6)){
+                            for(int i=1; i<=8; i++){
+                                makeWhiteNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Kn", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeWhiteNode(basePath, file, img, i);
+                        else if(img.startsWith("Bi", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeWhiteNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Ro", 6)){
-                        for(int i=1; i<=2; i++){
-                            makeWhiteNode(basePath, file, img, i);
+                        else if(img.startsWith("Kn", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeWhiteNode(basePath, file, img, i);
+                            }
                         }
-                    }
-                    else if(img.startsWith("Ki", 6)){
-                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                        surfaceRect.setStrokeWidth(2);
-                        StackPane piece = new StackPane();
-                        piece.getChildren().addAll(image, surfaceRect);
-                        this.whiteSprites.put(img, piece);
-                    }
-                    else if(img.startsWith("Qu", 6)){
-                        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-                        Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
-                        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-                        surfaceRect.setStrokeWidth(2);
-                        StackPane piece = new StackPane();
-                        piece.getChildren().addAll(image, surfaceRect);
-                        this.whiteSprites.put(img, piece);
+                        else if(img.startsWith("Ro", 6)){
+                            for(int i=1; i<=2; i++){
+                                makeWhiteNode(basePath, file, img, i);
+                            }
+                        }
+                        else if(img.startsWith("Ki", 6)){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
+                            this.whiteSprites.put(img, piece);
+                        }
+                        else if(img.startsWith("Qu", 6)){
+                            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+                            Rectangle surfaceRect = new Rectangle(75,75,Color.rgb(0, 0, 0, 0));
+                            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+                            surfaceRect.setStrokeWidth(2);
+                            StackPane piece = new StackPane();
+                            piece.getChildren().addAll(image, surfaceRect);
+                            this.whiteSprites.put(img, piece);
+                        }
                     }
                 }
             }
         }
-
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     //helper method to generate a white piece node with image etc
-    private void makeWhiteNode(String basePath, File file, String img, int i) throws FileNotFoundException {
-        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-        Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
-        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-        surfaceRect.setStrokeWidth(2);
-        StackPane piece = new StackPane();
-        piece.getChildren().addAll(image, surfaceRect);
-        this.whiteSprites.put(img+" "+i, piece);
+    private void makeWhiteNode(String basePath, File file, String img, int i) {
+        try{
+            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+            Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
+            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+            surfaceRect.setStrokeWidth(2);
+            StackPane piece = new StackPane();
+            piece.getChildren().addAll(image, surfaceRect);
+            this.whiteSprites.put(img+" "+i, piece);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     //helper method to generate a black piece node with image etc
-    private void makeBlackNode(String basePath, File file, String img, int i) throws FileNotFoundException {
-        ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
-        Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
-        surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
-        surfaceRect.setStrokeWidth(2);
-        StackPane piece = new StackPane();
-        piece.getChildren().addAll(image, surfaceRect);
-        this.blackSprites.put(img+" "+i, piece);
+    private void makeBlackNode(String basePath, File file, String img, int i) {
+        try{
+            ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
+            Rectangle surfaceRect = new Rectangle(75,75, Color.rgb(0, 0, 0, 0));
+            surfaceRect.setStroke(Color.rgb(20, 20, 20, 1));
+            surfaceRect.setStrokeWidth(2);
+            StackPane piece = new StackPane();
+            piece.getChildren().addAll(image, surfaceRect);
+            this.blackSprites.put(img+" "+i, piece);
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     //places generated pieces in correct places on board
@@ -1128,8 +1166,48 @@ public class Main extends Application {
         return new Scene(startJoin, 725, 500);
     }
 
+    //create win/loss screen
+    public void gameOver (String result){
+        BorderPane root = new BorderPane();
+        VBox gameOver = new VBox();
+
+        Button quit = new Button("Quit Game");
+        quit.setPrefSize(100, 20);
+
+        Button playAgain = new Button("Play Again");
+        playAgain.setPrefSize(100, 20);
+
+        gameOver.getChildren().addAll(quit, playAgain);
+        gameOver.setPadding(new Insets(5, 5, 5, 5));
+        gameOver.setSpacing(10);
+
+        Text res = new Text();
+        res.setText("You " + result);
+        res.setFont(new Font(50));
+
+        root.setCenter(res);
+        root.setRight(gameOver);
+
+        quit.setOnAction(e -> {
+            try {
+                System.exit(1);
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
+        playAgain.setOnAction(e -> {
+            try {
+                restart();
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }); //CHANGE ME
+
+        this.gameOverScene = new Scene(root, 725, 500);
+    }
+
     //creates main chessboard/game scene and defines what buttons do, etc
-    public Scene createChessBoard() throws Exception {
+    public Scene createChessBoard() {
         this.blackSprites = new DualHashBidiMap<>(){};
         this.whiteSprites = new DualHashBidiMap<>();
         this.blackTaken = new DualHashBidiMap<>(){};
@@ -1141,18 +1219,24 @@ public class Main extends Application {
         //Button menuButton = new Button("Menu");
         //menuButton.setPrefSize(100, 20);
 
+        Button forfeit = new Button("Forfeit");
+        forfeit.setPrefSize(100, 20);
+        forfeit.setOnAction(e -> {
+            try {
+                endGame("lose");
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        });
+
         //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
         Button switchPlayer = new Button("Switch player");
         switchPlayer.setPrefSize(100, 20);
-        switchPlayer.setOnAction(e -> {
-            switchTurn();
-        });
+        switchPlayer.setOnAction(e -> switchTurn());
         //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
         Button printPlayer = new Button("Print player");
         printPlayer.setPrefSize(100, 20);
-        printPlayer.setOnAction(e -> {
-            System.out.println(turn);
-        });
+        printPlayer.setOnAction(e -> System.out.println(turn));
 
 
         for(int i = 0; i<8; i++){
@@ -1182,7 +1266,7 @@ public class Main extends Application {
 
 
         VBox testbuttons = new VBox();
-        testbuttons.getChildren().addAll(switchPlayer, printPlayer);
+        testbuttons.getChildren().addAll(switchPlayer, printPlayer, forfeit);
         root.setRight(testbuttons);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
         return new Scene(root, 616, 616);
