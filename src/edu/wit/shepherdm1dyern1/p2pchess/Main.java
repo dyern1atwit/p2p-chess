@@ -229,15 +229,12 @@ public class Main extends Application {
         }
     }
 
-
     /*
     ^^^^^^^^^^^^^^^^^^^^^
     Getter/helper methods
     Actual chess stuff (piece movement, taking, move checking, etc)
     VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
     */
-
-
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
@@ -296,8 +293,6 @@ public class Main extends Application {
         return new ArrayList<>();
     }
 
-
-
     //helper method to find if a piece can take another piece
     public boolean canTake(Node taker, Node taken){
         if((whiteSprites.containsValue(taker)&&blackSprites.containsValue(taken))||(blackSprites.containsValue(taker)&&whiteSprites.containsValue(taken))){
@@ -313,8 +308,6 @@ public class Main extends Application {
         //stub
     }
 
-
-
     //helper method to swap which player's turn it is
     public void switchTurn(){
         if(turn.equals("white")){
@@ -325,7 +318,6 @@ public class Main extends Application {
         }
         System.out.println("switched turn to "+turn);
     }
-
 
     //HOW PIECES MOVE BELOW
 
@@ -873,26 +865,12 @@ public class Main extends Application {
         return false;
     }
 
-
-
     /*
     ^^^^^^^^^^^^^^^^^^^^^
     Actual chess stuff (piece movement, taking, move checking, etc)
     preload/creation stuff
     VVVVVVVVVVVVVVVVVVVVV
     */
-
-
-
-
-
-
-
-
-
-
-
-
 
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
     public void loadNodes() throws Exception {
