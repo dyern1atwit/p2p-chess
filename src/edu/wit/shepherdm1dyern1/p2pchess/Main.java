@@ -278,9 +278,16 @@ public class Main extends Application {
         switchTurn();
     }
 
-    //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap - STUB, REQUIRES COMPLETION BY NICK
+    //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
     public void takePiece(Node taken){
-        //implement piece taking here
+        if (whiteSprites.containsValue(taken)) {
+            this.whiteTaken.put(whiteSprites.getKey(taken), taken.getParent());
+        }
+        if (blackSprites.containsValue(taken)) {
+            this.blackTaken.put(blackSprites.getKey(taken), taken.getParent());
+        }
+        StackPane takenPane = (StackPane) taken.getParent();
+        takenPane.getChildren().remove(taken);
     }
 
     //IMPORTANT method that determines where a clicked piece can move and highlights those spaces NOT FINISHED
@@ -324,7 +331,7 @@ public class Main extends Application {
 
     //STUB METHOD FOR PAWN PROMOTION - requires completion by Nick
     public void promotePawn(Node pawn){
-        //stub
+
     }
 
     //helper method to swap which player's turn it is
