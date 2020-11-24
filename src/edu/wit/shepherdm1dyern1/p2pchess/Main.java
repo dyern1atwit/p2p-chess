@@ -280,11 +280,12 @@ public class Main extends Application {
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
     public void takePiece(Node taken){
+        System.out.println(taken.getParent().getParent().getClass().getSimpleName());
         if (whiteSprites.containsValue(taken)) {
-            this.whiteTaken.put(whiteSprites.getKey(taken), taken.getParent());
+            this.whiteTaken.put(whiteSprites.getKey(taken), taken);
         }
         if (blackSprites.containsValue(taken)) {
-            this.blackTaken.put(blackSprites.getKey(taken), taken.getParent());
+            this.blackTaken.put(blackSprites.getKey(taken), taken);
         }
         StackPane takenPane = (StackPane) taken.getParent();
         takenPane.getChildren().remove(taken);
