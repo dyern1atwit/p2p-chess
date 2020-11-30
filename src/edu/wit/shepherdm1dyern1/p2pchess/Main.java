@@ -14,8 +14,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.*;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import org.apache.commons.collections4.BidiMap;
@@ -30,6 +31,7 @@ public class Main extends Application {
     public Scene menu;
     public Scene gameOverScene;
     public Node selectedNode;
+    public int port;
     public BidiMap<String, Node> blackSprites;
     public BidiMap<String, Node> whiteSprites;
     public BidiMap<String, Node> blackTaken;
@@ -78,15 +80,17 @@ public class Main extends Application {
     }
 
     //takes port and game scene, will be used later to handle creating new game on given port
-    public void createGame (TextField port, Scene game) {
+    public void createGame (TextField port, Scene game) throws IOException {
         this.playerColor = "white";
         this.stage.setScene(game);
+        this.port = Integer.parseInt(port.getText());
+        new Connection.ServerThread(this.port).start();
         System.out.println(port.getText());
         port.clear();
     }
 
     //takes ip and game scene, will be used later to handle connecting to existing game
-    public void joinGame (TextField ip, Scene game) {
+    public void joinGame (TextField ip, Scene game) throws IOException {
         this.playerColor = "black";
         boardGrid.setRotate(180);
         for (String key : blackSprites.keySet()) {
@@ -96,6 +100,9 @@ public class Main extends Application {
             whiteSprites.get(key).setRotate(180);
         }
         this.stage.setScene(game);
+        Connection.ConnectionThread clientConnection = new Connection.ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
+        clientConnection.setAsConnector();
+        clientConnection.start();
         System.out.println(ip.getText());
         ip.clear();
     }
