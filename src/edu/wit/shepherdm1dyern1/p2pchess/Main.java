@@ -25,7 +25,7 @@ import org.apache.commons.collections4.bidimap.*;
 public class Main extends Application {
     //public variables for easier helper access
     public GridPane boardGrid = new GridPane();
-    public Stage stage;
+    public Stage primaryStage;
     public Scene chessBoard;
     public Scene menu;
     public Scene gameOverScene;
@@ -47,7 +47,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage){
-        this.stage = primaryStage;
+        this.primaryStage = primaryStage;
         startGame();
     }
 
@@ -55,9 +55,9 @@ public class Main extends Application {
     public void startGame() {
         this.menu = createMenu();
         this.chessBoard = createChessBoard();
-        this.stage.setTitle("Chess");
-        this.stage.setScene(menu);
-        this.stage.show();
+        this.primaryStage.setTitle("Chess");
+        this.primaryStage.setScene(menu);
+        this.primaryStage.show();
     }
 
     //cleans up before restart
@@ -80,7 +80,7 @@ public class Main extends Application {
     //takes port and game scene, will be used later to handle creating new game on given port
     public void createGame (TextField port, Scene game) {
         this.playerColor = "white";
-        this.stage.setScene(game);
+        this.primaryStage.setScene(game);
         System.out.println(port.getText());
         port.clear();
     }
@@ -95,7 +95,7 @@ public class Main extends Application {
         for (String key : whiteSprites.keySet()) {
             whiteSprites.get(key).setRotate(180);
         }
-        this.stage.setScene(game);
+        this.primaryStage.setScene(game);
         System.out.println(ip.getText());
         ip.clear();
     }
@@ -901,7 +901,7 @@ public class Main extends Application {
     //ends game
     public void endGame(String result){
         gameOver(result);
-        this.stage.setScene(gameOverScene);
+        this.primaryStage.setScene(gameOverScene);
     }
 
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
@@ -1249,15 +1249,11 @@ public class Main extends Application {
 
         for(int i = 0; i<8; i++){
             for(int j = 0; j<8; j++){
-                Rectangle rect = new Rectangle(75, 75, Color.WHITE);
-                rect.setStroke(Color.rgb(20, 20, 20, 1));
-                rect.setStrokeWidth(2);
-                StackPane gridStack = new StackPane();
+                Square tempSquare = new Square();
                 if ((i % 2 != 0 || j % 2 != 0) && (i % 2 == 0 || j % 2 == 0)) {
-                    rect.setFill(Color.rgb(20, 20, 20, 1));
+                    tempSquare.setBlack();
                 }
-                gridStack.getChildren().add(rect);
-                boardGrid.add(gridStack, i, j);
+                boardGrid.add(tempSquare, i, j);
             }
         }
 
