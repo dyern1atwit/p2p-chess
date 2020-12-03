@@ -39,6 +39,7 @@ public class Main extends Application {
     public String playerColor;
     public String turn = "white";
     public ArrayList<int[]> currentValid;
+    private ChatWindow chat;
 
     /*
     - do pieces
@@ -59,6 +60,7 @@ public class Main extends Application {
         this.chessBoard = createChessBoard();
         this.stage.setTitle("Chess");
         this.stage.setScene(menu);
+        this.stage.setResizable(false);
         this.stage.show();
     }
 
@@ -83,6 +85,7 @@ public class Main extends Application {
     public void createGame (TextField port, Scene game) throws IOException {
         this.playerColor = "white";
         this.stage.setScene(game);
+        this.chat = new ChatWindow();
         this.port = Integer.parseInt(port.getText());
         new Connection.ServerThread(this.port).start();
         System.out.println(port.getText());
@@ -100,6 +103,7 @@ public class Main extends Application {
             whiteSprites.get(key).setRotate(180);
         }
         this.stage.setScene(game);
+        this.chat = new ChatWindow();
         Connection.ConnectionThread clientConnection = new Connection.ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
         clientConnection.setAsConnector();
         clientConnection.start();
@@ -1246,7 +1250,7 @@ public class Main extends Application {
 
         //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
         Button switchPlayer = new Button("Switch player");
-        switchPlayer.setPrefSize(100, 20);
+        switchPlayer.setPrefSize(110, 20);
         switchPlayer.setOnAction(e -> switchTurn());
         //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
         Button printPlayer = new Button("Print player");
@@ -1284,7 +1288,7 @@ public class Main extends Application {
         testbuttons.getChildren().addAll(switchPlayer, printPlayer, forfeit);
         root.setRight(testbuttons);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
-        return new Scene(root, 616, 616);
+        return new Scene(root, 726, 616);
     }
 
     public static void main(String[] args) {
