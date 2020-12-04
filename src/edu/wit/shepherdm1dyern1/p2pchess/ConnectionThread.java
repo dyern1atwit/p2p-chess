@@ -76,9 +76,9 @@ public class ConnectionThread extends Thread {
                 Platform.runLater(new Runnable() {
                     @Override public void run() {
                         Main.getGame().movePiece(Integer.parseInt(input[1]), Integer.parseInt(input[2]), Integer.parseInt(input[3]), Integer.parseInt(input[4]));
+                        Main.getGame().switchTurn();
                     }
                 });
-
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }

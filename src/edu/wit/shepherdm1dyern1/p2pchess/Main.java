@@ -39,7 +39,7 @@ public class Main extends Application {
     public BidiMap<String, Node> blackTaken;
     public BidiMap<String, Node> whiteTaken;
     public String playerColor;
-    public String turn = "white";
+    public static String turn = "white";
     public ArrayList<int[]> currentValid;
     private ChatWindow chat;
     public ConnectionThread clientConnection;
@@ -91,7 +91,7 @@ public class Main extends Application {
         this.playerColor = "white";
         this.isHost = true;
         this.stage.setScene(game);
-        this.chat = new ChatWindow();
+        //this.chat = new ChatWindow();
         this.port = Integer.parseInt(port.getText());
         serverConnection = new ServerThread(this.port);
         serverConnection.start();
@@ -112,7 +112,7 @@ public class Main extends Application {
             whiteSprites.get(key).setRotate(180);
         }
         this.stage.setScene(game);
-        this.chat = new ChatWindow();
+        //this.chat = new ChatWindow();
         this.clientConnection = new ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
         this.clientConnection.setAsConnector();
         this.clientConnection.start();
@@ -334,18 +334,19 @@ public class Main extends Application {
         StackPane piece = (StackPane) sourceStack.getChildren().get(1);
         sourceStack.getChildren().remove(sourceStack.getChildren().get(1));
         destStack.getChildren().add(piece);
-        this.turn = this.playerColor;//ISSUE HERE
     }
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
     public void takePiece(Node taken){
         System.out.println(taken.getParent().getParent().getClass().getSimpleName());
+        /*
         if (whiteSprites.containsValue(taken)) {
             this.whiteTaken.put(whiteSprites.getKey(taken), taken);
         }
         if (blackSprites.containsValue(taken)) {
             this.blackTaken.put(blackSprites.getKey(taken), taken);
         }
+        */
         StackPane takenPane = (StackPane) taken.getParent();
         takenPane.getChildren().remove(taken);
     }
