@@ -390,10 +390,10 @@ public class Main extends Application {
         return (whiteSprites.containsValue(taker) && blackSprites.containsValue(taken)) || (blackSprites.containsValue(taker) && whiteSprites.containsValue(taken));
     }
 
-    //STUB METHOD FOR PAWN PROMOTION - requires completion by Nick
+    /*STUB METHOD FOR PAWN PROMOTION - unfinished
     public void promotePawn(Node pawn){
-
     }
+     */
 
     //helper method to swap which player's turn it is
     public void switchTurn(){
@@ -433,7 +433,7 @@ public class Main extends Application {
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
                         valid.add(new int[]{pos[0]-1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -441,7 +441,7 @@ public class Main extends Application {
                     if((pos[0]+1)<=7){
                         stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
                         valid.add(new int[]{pos[0]+1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -454,7 +454,7 @@ public class Main extends Application {
         }
         else{
             int spaces;
-            if(pos[0]==6){
+            if(pos[1]==1){
                 spaces = 2;
             }
             else{
