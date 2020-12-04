@@ -1,5 +1,6 @@
 package edu.wit.shepherdm1dyern1.p2pchess;
 
+import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.layout.StackPane;
 
@@ -72,7 +73,12 @@ public class ConnectionThread extends Thread {
         }
         else if (input[0].equals("MOVE:")) {
             if (input.length == 5) {
-                Main.getGame().movePiece(Integer.parseInt(input[1]), Integer.parseInt(input[2]), Integer.parseInt(input[3]), Integer.parseInt(input[4]));
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        Main.getGame().movePiece(Integer.parseInt(input[1]), Integer.parseInt(input[2]), Integer.parseInt(input[3]), Integer.parseInt(input[4]));
+                    }
+                });
+
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }

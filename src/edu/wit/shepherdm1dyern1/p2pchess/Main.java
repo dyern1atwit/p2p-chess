@@ -18,6 +18,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.*;
@@ -297,9 +298,8 @@ public class Main extends Application {
             takePiece(destStack);
         }
 
-        StackPane sourceStack;
-        if (blackSprites.containsValue(piece) || whiteSprites.containsValue(piece)) sourceStack = (StackPane) piece.getParent();
-        else sourceStack = (StackPane) piece;
+        StackPane sourceStack = (StackPane) piece.getParent();
+
         sourceStack.getChildren().remove(piece);
         finalDest.getChildren().add(piece);
 
@@ -326,7 +326,15 @@ public class Main extends Application {
     }
 
     public void movePiece(int x1, int y1, int x2, int y2) {
-        movePiece(getNode(x1, y1, boardGrid), getNode(x2, y2, boardGrid));
+        StackPane sourceStack = (StackPane) getNode(x1, y1, boardGrid);
+        StackPane destStack = (StackPane) getNode(x2, y2, boardGrid);
+        if(destStack.getChildren().size()>1){
+            takePiece(destStack.getChildren().get(1));
+        }
+        StackPane piece = (StackPane) sourceStack.getChildren().get(1);
+        sourceStack.getChildren().remove(sourceStack.getChildren().get(1));
+        destStack.getChildren().add(piece);
+        this.turn = this.playerColor;//ISSUE HERE
     }
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
