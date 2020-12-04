@@ -24,6 +24,7 @@ import org.apache.commons.collections4.bidimap.*;
 
 
 public class Main extends Application {
+    private static Main mainGame;
     //public variables for easier helper access
     public GridPane boardGrid = new GridPane();
     public Stage stage;
@@ -40,6 +41,9 @@ public class Main extends Application {
     public String turn = "white";
     public ArrayList<int[]> currentValid;
     private ChatWindow chat;
+    public ConnectionThread clientConnection;
+    public ServerThread serverConnection;
+    public boolean isHost;
 
     /*
     - do pieces
@@ -84,10 +88,13 @@ public class Main extends Application {
     //takes port and game scene, will be used later to handle creating new game on given port
     public void createGame (TextField port, Scene game) throws IOException {
         this.playerColor = "white";
+        this.isHost = true;
         this.stage.setScene(game);
         this.chat = new ChatWindow();
         this.port = Integer.parseInt(port.getText());
-        new Connection.ServerThread(this.port).start();
+        serverConnection = new ServerThread(this.port);
+        serverConnection.start();
+        System.out.println("white, host");
         System.out.println(port.getText());
         port.clear();
     }
@@ -95,6 +102,7 @@ public class Main extends Application {
     //takes ip and game scene, will be used later to handle connecting to existing game
     public void joinGame (TextField ip, Scene game) throws IOException {
         this.playerColor = "black";
+        this.isHost = false;
         boardGrid.setRotate(180);
         for (String key : blackSprites.keySet()) {
             blackSprites.get(key).setRotate(180);
@@ -104,9 +112,10 @@ public class Main extends Application {
         }
         this.stage.setScene(game);
         this.chat = new ChatWindow();
-        Connection.ConnectionThread clientConnection = new Connection.ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
-        clientConnection.setAsConnector();
-        clientConnection.start();
+        this.clientConnection = new ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
+        this.clientConnection.setAsConnector();
+        this.clientConnection.start();
+        System.out.println("black, client");
         System.out.println(ip.getText());
         ip.clear();
     }
@@ -271,6 +280,10 @@ public class Main extends Application {
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
+        String s = "MOVE: ";
+        for (int i : getGridPos(piece, boardGrid)) s += Integer.toString(i) + " ";
+        for (int i : getGridPos(dest, boardGrid)) s += Integer.toString(i) + " ";
+        System.out.println(s);
         piece = piece.getParent();
 
         StackPane destStack = (StackPane) dest.getParent();
@@ -286,7 +299,25 @@ public class Main extends Application {
         finalDest.getChildren().add(piece);
 
         this.selectedNode = null;
+
+        if (turn.equals(playerColor)) {
+            if (isHost) {
+                try {
+                    this.serverConnection.getConnectionThread().send(s, true);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            else {
+                try {
+                    this.clientConnection.send(s, true);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         switchTurn();
+
     }
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
@@ -1292,6 +1323,11 @@ public class Main extends Application {
     }
 
     public static void main(String[] args) {
-        launch(args);
+        mainGame = new Main();
+        mainGame.launch(args);
+    }
+
+    public static Main getGame(){
+        return mainGame;
     }
 }
