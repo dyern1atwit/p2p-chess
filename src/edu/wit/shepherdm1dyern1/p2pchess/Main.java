@@ -26,15 +26,15 @@ import org.apache.commons.collections4.bidimap.*;
 public class Main extends Application {
     private static Main mainGame;
     //public variables for easier helper access
-    public GridPane boardGrid = new GridPane();
+    public static GridPane boardGrid = new GridPane();
     public Stage stage;
     public Scene chessBoard;
     public Scene menu;
     public Scene gameOverScene;
     public Node selectedNode;
     public int port;
-    public BidiMap<String, Node> blackSprites;
-    public BidiMap<String, Node> whiteSprites;
+    public static BidiMap<String, Node> blackSprites;
+    public static BidiMap<String, Node> whiteSprites;
     public BidiMap<String, Node> blackTaken;
     public BidiMap<String, Node> whiteTaken;
     public String playerColor;
@@ -169,15 +169,16 @@ public class Main extends Application {
 
     //gets node given row and column values
     public Node getNode (int column, int row, GridPane grid) {
-        Node result = null;
         ObservableList<Node> gridNodes = grid.getChildren();
+        int i = 0;
         for (Node node : gridNodes) {
             if (GridPane.getRowIndex(node) == row && GridPane.getColumnIndex(node) == column) {
-                result = node;
-                break;
+                return node;
             }
+            System.out.println(i);
+            i++;
         }
-        return result;
+        return null;
     }
 
     //gets node given mouseclick event
@@ -281,9 +282,11 @@ public class Main extends Application {
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
         String s = "MOVE: ";
-        for (int i : getGridPos(piece, boardGrid)) s += Integer.toString(i) + " ";
-        for (int i : getGridPos(dest, boardGrid)) s += Integer.toString(i) + " ";
-        System.out.println(s);
+        if (turn.equals(playerColor)){
+            for (int i : getGridPos(piece, this.boardGrid)) s += Integer.toString(i) + " ";
+            for (int i : getGridPos(dest, this.boardGrid)) s += Integer.toString(i) + " ";
+            System.out.println(s);
+        }
         piece = piece.getParent();
 
         StackPane destStack = (StackPane) dest.getParent();
@@ -294,7 +297,9 @@ public class Main extends Application {
             takePiece(destStack);
         }
 
-        StackPane sourceStack = (StackPane) piece.getParent();
+        StackPane sourceStack;
+        if (blackSprites.containsValue(piece) || whiteSprites.containsValue(piece)) sourceStack = (StackPane) piece.getParent();
+        else sourceStack = (StackPane) piece;
         sourceStack.getChildren().remove(piece);
         finalDest.getChildren().add(piece);
 
@@ -318,6 +323,10 @@ public class Main extends Application {
         }
         switchTurn();
 
+    }
+
+    public void movePiece(int x1, int y1, int x2, int y2) {
+        movePiece(getNode(x1, y1, boardGrid), getNode(x2, y2, boardGrid));
     }
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap

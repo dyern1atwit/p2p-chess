@@ -1,6 +1,7 @@
 package edu.wit.shepherdm1dyern1.p2pchess;
 
 import javafx.scene.Node;
+import javafx.scene.layout.StackPane;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -71,9 +72,7 @@ public class ConnectionThread extends Thread {
         }
         else if (input[0].equals("MOVE:")) {
             if (input.length == 5) {
-                Node piece = Main.getGame().getNode(Integer.parseInt(input[1]), Integer.parseInt(input[2]), Main.getGame().boardGrid);
-                Node dest = Main.getGame().getNode(Integer.parseInt(input[3]), Integer.parseInt(input[4]), Main.getGame().boardGrid);
-                Main.getGame().movePiece(piece, dest);
+                Main.getGame().movePiece(Integer.parseInt(input[1]), Integer.parseInt(input[2]), Integer.parseInt(input[3]), Integer.parseInt(input[4]));
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }
