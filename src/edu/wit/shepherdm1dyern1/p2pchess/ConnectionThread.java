@@ -36,14 +36,14 @@ public class ConnectionThread extends Thread {
             thisID = gen.nextInt(999999999-100000000+1)+100000000;
             if (isConnecting) {
                 String connectString = "CNTRQ: " + thisID + "\r\n";
-                System.out.println("out: " + connectString);
+                //System.out.println("out: " + connectString);
                 outToPeer.writeBytes(connectString);
             }
             while (true) {
-                System.out.println("Waiting for signal...");
+                //System.out.println("Waiting for signal...");
                 String input = inFromPeer.readLine();
                 String output = inputProccessing(input);
-                System.out.println("out: " + output);
+                //System.out.println("out: " + output);
                 outToPeer.writeBytes(output);
             }
         } catch (IOException e) {
@@ -61,7 +61,7 @@ public class ConnectionThread extends Thread {
     }
 
     public String inputProccessing(String inputString) {
-        System.out.println("in: " + inputString);
+        //System.out.println("in: " + inputString);
         String errorArgs = "ERROR: INCORRECT NUM OF ARGS\r\n";
         String errorNotFound = "ERROR: INPUT NOT REGISTERED\r\n";
         String[] input = inputString.split(" ");

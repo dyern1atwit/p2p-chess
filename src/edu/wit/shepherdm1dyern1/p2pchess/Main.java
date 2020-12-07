@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.MapIterator;
 import org.apache.commons.collections4.bidimap.*;
 
 
@@ -41,10 +42,10 @@ public class Main extends Application {
     public String playerColor;
     public static String turn = "white";
     public ArrayList<int[]> currentValid;
-    private ChatWindow chat;
     public ConnectionThread clientConnection;
     public ServerThread serverConnection;
     public boolean isHost;
+    public static ChatWindow chatWindow;
 
     /*
     - do pieces
@@ -91,8 +92,8 @@ public class Main extends Application {
         this.playerColor = "white";
         this.isHost = true;
         this.stage.setScene(game);
-        //this.chat = new ChatWindow();
         this.port = Integer.parseInt(port.getText());
+        chatWindow = new ChatWindow("localhost", this.port, true);
         serverConnection = new ServerThread(this.port);
         serverConnection.start();
         System.out.println("white, host");
@@ -112,8 +113,10 @@ public class Main extends Application {
             whiteSprites.get(key).setRotate(180);
         }
         this.stage.setScene(game);
-        //this.chat = new ChatWindow();
-        this.clientConnection = new ConnectionThread(ip.getText().split(":")[0], Integer.parseInt(ip.getText().split(":")[1]));
+        String connectingIP = ip.getText().split(":")[0];
+        int connectingPort = Integer.parseInt(ip.getText().split(":")[1]);
+        chatWindow = new ChatWindow(connectingIP, connectingPort, false);
+        this.clientConnection = new ConnectionThread(connectingIP, connectingPort);
         this.clientConnection.setAsConnector();
         this.clientConnection.start();
         System.out.println("black, client");
@@ -171,13 +174,10 @@ public class Main extends Application {
     //gets node given row and column values
     public Node getNode (int column, int row, GridPane grid) {
         ObservableList<Node> gridNodes = grid.getChildren();
-        int i = 0;
         for (Node node : gridNodes) {
             if (GridPane.getRowIndex(node) == row && GridPane.getColumnIndex(node) == column) {
                 return node;
             }
-            System.out.println(i);
-            i++;
         }
         return null;
     }
@@ -282,6 +282,8 @@ public class Main extends Application {
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
+        chatWindow.gameEvent(toChessMoves(piece.getParent(), dest));
+
         String s = "MOVE: ";
         if (turn.equals(playerColor)){
             for (int i : getGridPos(piece, this.boardGrid)) s += Integer.toString(i) + " ";
@@ -296,6 +298,7 @@ public class Main extends Application {
         if((!(blackSprites.getKey(destStack)==null)&&playerColor.equals("white"))||(!(whiteSprites.getKey(destStack)==null)&&playerColor.equals("black"))){
             finalDest = (StackPane) destStack.getParent();
             takePiece(destStack);
+            chatWindow.gameEvent("Took "+getPieceName(destStack));
         }
 
         StackPane sourceStack = (StackPane) piece.getParent();
@@ -304,7 +307,6 @@ public class Main extends Application {
         finalDest.getChildren().add(piece);
 
         this.selectedNode = null;
-
         if (turn.equals(playerColor)) {
             if (isHost) {
                 try {
@@ -321,17 +323,21 @@ public class Main extends Application {
                 }
             }
         }
+
         switchTurn();
 
     }
 
     public void movePiece(int x1, int y1, int x2, int y2) {
+
         StackPane sourceStack = (StackPane) getNode(x1, y1, boardGrid);
         StackPane destStack = (StackPane) getNode(x2, y2, boardGrid);
+        StackPane piece = (StackPane) sourceStack.getChildren().get(1);
+        chatWindow.gameEvent(toChessMoves(piece, new int[] {x1, y1}, new int[] {x2, y2}));
         if(destStack.getChildren().size()>1){
+            chatWindow.gameEvent("Took "+getPieceName(destStack.getChildren().get(1)));
             takePiece(destStack.getChildren().get(1));
         }
-        StackPane piece = (StackPane) sourceStack.getChildren().get(1);
         sourceStack.getChildren().remove(sourceStack.getChildren().get(1));
         destStack.getChildren().add(piece);
     }
@@ -349,6 +355,44 @@ public class Main extends Application {
         */
         StackPane takenPane = (StackPane) taken.getParent();
         takenPane.getChildren().remove(taken);
+    }
+
+    public String toChessMoves(Node piece, Node dest){
+        String[] letters = new String[] {"a","b","c","d","e","f","g"};
+        String s = "";
+        s += getPieceName(piece) + " ";
+
+        int[] piecePos = getGridPos(piece, boardGrid);
+        int[] destPos = getGridPos(dest, boardGrid);
+        //String piecePos = "";
+        s += letters[piecePos[0]]+(8-piecePos[1])+" to ";
+        s += letters[destPos[0]]+(8-destPos[1]);
+        return s;
+    }
+
+    public String toChessMoves(Node piece, int[] piecePos, int[] destPos){
+        String[] letters = new String[] {"a","b","c","d","e","f","g"};
+        String s = "";
+        s += getPieceName(piece) + " ";
+
+        //String piecePos = "";
+        s += letters[piecePos[0]]+(8-piecePos[1])+" to ";
+        s += letters[destPos[0]]+(8-destPos[1]);
+        return s;
+    }
+
+    public String getPieceName(Node piece){
+        String s = "";
+        String pieceName;
+        if (whiteSprites.getKey(piece) != null) {
+            pieceName = whiteSprites.getKey(piece);
+        } else {
+            pieceName = blackSprites.getKey(piece);
+        }
+        s += pieceName.split(" ")[0]+" ";
+        s += pieceName.split(" ")[1];
+        return s;
+
     }
 
     //IMPORTANT method that determines where a clicked piece can move and highlights those spaces NOT FINISHED
@@ -938,7 +982,6 @@ public class Main extends Application {
                 }
             }
             else{
-                System.out.println("why");
                 greenBorder(stack.getChildren().get(0));
                 valid.add(new int[]{pos[0], pos[1]});
             }
@@ -947,7 +990,34 @@ public class Main extends Application {
 
     //returns true if given king is in check (for when king is moving and after each move, int[] used for ease of king movement, can overload later if needed)
     public boolean checkCheck(int[] kingPos, String player){
-        //stub
+        if (player.equals("white")){
+            MapIterator<String, Node> iterator = blackSprites.mapIterator();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                StackPane piece = (StackPane) iterator.getValue();
+                ArrayList<int[]> validMoves = getMoves(piece, boardGrid, "black");
+                if (validMoves.contains(kingPos)) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
+        else {
+            MapIterator<String, Node> iterator = whiteSprites.mapIterator();
+            while (iterator.hasNext()) {
+                String key = iterator.next();
+                StackPane piece = (StackPane) iterator.getValue();
+                ArrayList<int[]> validMoves = getMoves(piece, boardGrid, "white");
+                if (validMoves.contains(kingPos)) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        }
         return false;
     }
 
