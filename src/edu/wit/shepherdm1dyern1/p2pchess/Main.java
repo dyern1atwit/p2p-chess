@@ -474,6 +474,9 @@ public class Main extends Application {
                         valid.add(new int[]{pos[0], pos[1]});
                         greenBorder(stack.getChildren().get(0));
                     }
+                    else{
+                        i++;
+                    }
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
                     }
@@ -511,6 +514,9 @@ public class Main extends Application {
                     if(!(stack.getChildren().size()>1)){
                         valid.add(new int[]{pos[0], pos[1]});
                         greenBorder(stack.getChildren().get(0));
+                    }
+                    else{
+                        i++;
                     }
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
