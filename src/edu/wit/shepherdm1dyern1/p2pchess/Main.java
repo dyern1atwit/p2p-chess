@@ -15,10 +15,7 @@ import javafx.scene.text.Text;
 import javafx.stage.*;
 
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.MapIterator;
@@ -396,7 +393,7 @@ public class Main extends Application {
     }
 
     //IMPORTANT method that determines where a clicked piece can move and highlights those spaces NOT FINISHED
-    public ArrayList<int[]> getMoves(Node piece, GridPane grid, String player) {
+    public void getMoves(Node piece, GridPane grid, String player) {
 
         String pieceName;
 
@@ -426,7 +423,42 @@ public class Main extends Application {
                 currentValid = knightMoves(piece, player);
                 break;
         }
-        return new ArrayList<>();
+    }
+
+    public ArrayList<int[]> getMovesCheck(Node piece, GridPane grid, String player) {
+
+        String pieceName;
+
+        ArrayList<int[]> valid = new ArrayList<>();
+
+
+        if (whiteSprites.getKey(piece) != null) {
+            pieceName = whiteSprites.getKey(piece);
+        } else {
+            pieceName = blackSprites.getKey(piece);
+        }
+        String nameStart = pieceName.substring(6, 8);
+        switch (nameStart) {
+            case "Pa":
+                valid = pawnMoves(piece, player);
+                break;
+            case "Ro":
+                valid = rookMoves(piece, player);
+                break;
+            case "Qu":
+                valid = queenMoves(piece, player);
+                break;
+            case "Ki":
+                valid = kingMoves(piece, player);
+                break;
+            case "Bi":
+                valid = bishopMoves(piece, player);
+                break;
+            case "Kn":
+                valid = knightMoves(piece, player);
+                break;
+        }
+        return valid;
     }
 
     //helper method to find if a piece can take another piece
@@ -448,6 +480,8 @@ public class Main extends Application {
             turn="white";
         }
         System.out.println("switched turn to "+turn);
+        System.out.println("White is in check: " + checkCheck(getGridPos(whiteSprites.get("White King"), boardGrid), "white"));
+        System.out.println("Black is in check: " + checkCheck(getGridPos(blackSprites.get("Black King"), boardGrid), "black"));
     }
 
     //HOW PIECES MOVE BELOW
@@ -978,7 +1012,7 @@ public class Main extends Application {
     //helper method for circling the king
     private void kingHelper(Node king, int[] pos, ArrayList<int[]> valid, String player) {
         StackPane stack;
-        if(pos[0]>=0&&pos[0]<=7&&pos[1]>=0&&pos[1]<=7&&!checkCheck(new int[]{pos[0], pos[1]}, player)){
+        if(pos[0]>=0&&pos[0]<=7&&pos[1]>=0&&pos[1]<=7){
             stack = (StackPane) getNode(pos[0], pos[1], boardGrid);
             if(stack.getChildren().size()>1) {
                 if (canTake(king, stack.getChildren().get(1))) {
@@ -999,31 +1033,32 @@ public class Main extends Application {
         if (player.equals("white")){
             MapIterator<String, Node> iterator = blackSprites.mapIterator();
             while (iterator.hasNext()) {
-                String key = iterator.next();
+                iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-                ArrayList<int[]> validMoves = getMoves(piece, boardGrid, "black");
-                if (validMoves.contains(kingPos)) {
-                    return true;
-                }
-                else {
-                    return false;
+                ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "black");
+                for (int[] validMove : validMoves) {
+                    if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
+                        blackBorders();
+                        return true;
+                    }
                 }
             }
         }
         else {
             MapIterator<String, Node> iterator = whiteSprites.mapIterator();
             while (iterator.hasNext()) {
-                String key = iterator.next();
+                iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-                ArrayList<int[]> validMoves = getMoves(piece, boardGrid, "white");
-                if (validMoves.contains(kingPos)) {
-                    return true;
-                }
-                else {
-                    return false;
+                ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "white");
+                for (int[] validMove : validMoves) {
+                    if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
+                        blackBorders();
+                        return true;
+                    }
                 }
             }
         }
+        blackBorders();
         return false;
     }
 
@@ -1208,10 +1243,10 @@ public class Main extends Application {
         gridStack = (StackPane) getNode(5, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Bishop 2"));
 
-        gridStack = (StackPane) getNode(4, 0, boardGrid);
+        gridStack = (StackPane) getNode(3, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black Queen"));
 
-        gridStack = (StackPane) getNode(3, 0, boardGrid);
+        gridStack = (StackPane) getNode(4, 0, boardGrid);
         gridStack.getChildren().add(blackSprites.get("Black King"));
 
 
