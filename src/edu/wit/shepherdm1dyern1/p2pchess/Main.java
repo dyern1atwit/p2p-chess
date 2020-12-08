@@ -27,7 +27,7 @@ public class Main extends Application {
     private static Main mainGame;
     //public variables for easier helper access
     public static GridPane boardGrid = new GridPane();
-    public Stage stage;
+    public static Stage stage;
     public Scene chessBoard;
     public Scene menu;
     public Scene gameOverScene;
@@ -38,7 +38,7 @@ public class Main extends Application {
     public static String playerColor;
     public static String turn = "white";
     public ArrayList<int[]> currentValid;
-    public ConnectionThread clientConnection;
+    public static ConnectionThread clientConnection;
     public ServerThread serverConnection;
     public boolean isHost;
     public static ChatWindow chatWindow;
@@ -276,7 +276,7 @@ public class Main extends Application {
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
         //chatWindow.gameEvent(toChessMoves(piece.getParent(), dest));
-
+        String chessMove = toChessMoves(piece.getParent(), dest);
         String s = "MOVE: ";
         if (turn.equals(playerColor)){
             for (int i : getGridPos(piece, this.boardGrid)) s += Integer.toString(i) + " ";
@@ -314,7 +314,7 @@ public class Main extends Application {
         }
 
         if(check){
-            System.out.println("invalid move, your king is still in check");
+            chatWindow.gameEvent("Cannot move into check or leave king in check");
             sourceStack.getChildren().add(piece);
             finalDest.getChildren().remove(piece);
             if(taken){
@@ -329,13 +329,8 @@ public class Main extends Application {
             this.selectedNode = null;
         }
         else{
+            chatWindow.gameEvent(chessMove);
             if(taken){
-                try{
-                    this.serverConnection.getConnectionThread().send(("TAKE: " + takeName), true);
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                }
                 chatWindow.gameEvent("Took "+ takeName.split("_")[0] + " " + takeName.split("_")[1]);
             }
             this.selectedNode = null;
@@ -365,7 +360,7 @@ public class Main extends Application {
         StackPane sourceStack = (StackPane) getNode(x1, y1, boardGrid);
         StackPane destStack = (StackPane) getNode(x2, y2, boardGrid);
         StackPane piece = (StackPane) sourceStack.getChildren().get(1);
-        //chatWindow.gameEvent(toChessMoves(piece, new int[] {x1, y1}, new int[] {x2, y2}));
+        chatWindow.gameEvent(toChessMoves(piece, new int[] {x1, y1}, new int[] {x2, y2}));
         if(destStack.getChildren().size()>1){
             chatWindow.gameEvent("Took "+getPieceName(destStack.getChildren().get(1)));
             takePiece(destStack.getChildren().get(1));
@@ -409,20 +404,23 @@ public class Main extends Application {
     }
 
     public String toChessMoves(Node piece, Node dest){
-        String[] letters = new String[] {"a","b","c","d","e","f","g"};
+        String[] letters = new String[] {"a","b","c","d","e","f","g","h"};
         String s = "";
         s += getPieceName(piece) + " ";
 
         int[] piecePos = getGridPos(piece, boardGrid);
         int[] destPos = getGridPos(dest, boardGrid);
         //String piecePos = "";
-        s += letters[piecePos[0]]+(8-piecePos[1])+" to ";
-        s += letters[destPos[0]]+(8-destPos[1]);
+        s += letters[piecePos[0]];
+        s += (8-piecePos[1])+" to ";
+        s += letters[destPos[0]];
+        s += (8-destPos[1]);
+
         return s;
     }
 
     public String toChessMoves(Node piece, int[] piecePos, int[] destPos){
-        String[] letters = new String[] {"a","b","c","d","e","f","g"};
+        String[] letters = new String[] {"a","b","c","d","e","f","g","h"};
         String s = "";
         s += getPieceName(piece) + " ";
 
@@ -1404,10 +1402,10 @@ public class Main extends Application {
         Button quit = new Button("Quit Game");
         quit.setPrefSize(100, 20);
 
-        Button playAgain = new Button("Play Again");
-        playAgain.setPrefSize(100, 20);
+        //Button playAgain = new Button("Play Again");
+        //playAgain.setPrefSize(100, 20);
 
-        gameOver.getChildren().addAll(quit, playAgain);
+        gameOver.getChildren().addAll(quit);
         gameOver.setPadding(new Insets(5, 5, 5, 5));
         gameOver.setSpacing(10);
 
@@ -1420,11 +1418,30 @@ public class Main extends Application {
 
         quit.setOnAction(e -> {
             try {
+                if (isHost) {
+                    try {
+                        this.serverConnection.getConnectionThread().send("QUIT: "+playerColor, true);
+                        this.serverConnection.getConnectionThread().closeConnection();
+                        chatWindow.closeConnection();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                else {
+                    try {
+                        this.clientConnection.send("QUIT: "+playerColor, true);
+                        this.clientConnection.closeConnection();
+                        chatWindow.closeConnection();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
                 System.exit(1);
             } catch (Exception exception) {
                 exception.printStackTrace();
             }
         }); //CHANGE ME
+        /*
         playAgain.setOnAction(e -> {
             try {
                 restart();
@@ -1432,7 +1449,7 @@ public class Main extends Application {
                 exception.printStackTrace();
             }
         }); //CHANGE ME
-
+        */
         this.gameOverScene = new Scene(root, 725, 500);
     }
 
@@ -1452,20 +1469,32 @@ public class Main extends Application {
         forfeit.setPrefSize(100, 20);
         forfeit.setOnAction(e -> {
             try {
+                String printColor = "";
+                for (int i = 0; i < playerColor.toCharArray().length; i++){
+                    if (i == 0) printColor += Character.toUpperCase(playerColor.toCharArray()[i]);
+                    else printColor += playerColor.toCharArray()[i];
+                }
+                if (isHost) {
+                    try {
+                        this.serverConnection.getConnectionThread().send("FORF: "+printColor, true);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                else {
+                    try {
+                        this.clientConnection.send("FORF: "+printColor, true);
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                chatWindow.gameEvent(printColor + " forfeits!");
                 endGame("lose");
+
             } catch (Exception exception) {
                 exception.printStackTrace();
             }
         });
-
-        //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
-        Button switchPlayer = new Button("Switch player");
-        switchPlayer.setPrefSize(110, 20);
-        switchPlayer.setOnAction(e -> switchTurn());
-        //TESTING ONLY BUTTON TO SWITCH PLAYER - for turn testing etc before sockets implemented
-        Button printPlayer = new Button("Print player");
-        printPlayer.setPrefSize(100, 20);
-        printPlayer.setOnAction(e -> System.out.println(turn));
 
 
         for(int i = 0; i<8; i++){
@@ -1495,7 +1524,7 @@ public class Main extends Application {
 
 
         VBox testbuttons = new VBox();
-        testbuttons.getChildren().addAll(switchPlayer, printPlayer, forfeit);
+        testbuttons.getChildren().addAll(forfeit);
         root.setRight(testbuttons);
         //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
         return new Scene(root, 726, 616);

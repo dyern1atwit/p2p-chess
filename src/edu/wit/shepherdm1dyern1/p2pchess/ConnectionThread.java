@@ -14,17 +14,22 @@ import java.util.Random;
 public class ConnectionThread extends Thread {
     BufferedReader inFromPeer;
     DataOutputStream outToPeer;
+    Socket connectionSocket;
     int connectingID;
     int thisID;
     boolean isConnecting = false;
+    boolean isLive;
 
     public ConnectionThread(Socket socket) throws IOException {
-        inFromPeer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        outToPeer = new DataOutputStream(socket.getOutputStream());
+        isLive = true;
+        connectionSocket = socket;
+        inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+        outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
 
     public ConnectionThread(String ip, int port) throws IOException { ;
-        Socket connectionSocket = new Socket(ip, port);
+        isLive = true;
+        connectionSocket = new Socket(ip, port);
         inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
         outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
@@ -39,7 +44,7 @@ public class ConnectionThread extends Thread {
                 //System.out.println("out: " + connectString);
                 outToPeer.writeBytes(connectString);
             }
-            while (true) {
+            while (isLive) {
                 //System.out.println("Waiting for signal...");
                 String input = inFromPeer.readLine();
                 String output = inputProccessing(input);
@@ -56,11 +61,18 @@ public class ConnectionThread extends Thread {
     }
 
     public void send(String s, boolean send) throws IOException {
-        outToPeer.writeBytes(s);
-        if (send) outToPeer.writeBytes("\r\n");
+        if (isLive) {
+            outToPeer.writeBytes(s);
+            if (send) outToPeer.writeBytes("\r\n");
+        }
     }
 
-    public String inputProccessing(String inputString) {
+    public void closeConnection() throws IOException {
+        isLive = false;
+        connectionSocket.close();
+    }
+
+    public String inputProccessing(String inputString) throws IOException {
         //System.out.println("in: " + inputString);
         String errorArgs = "ERROR: INCORRECT NUM OF ARGS\r\n";
         String errorNotFound = "ERROR: INPUT NOT REGISTERED\r\n";
@@ -82,6 +94,17 @@ public class ConnectionThread extends Thread {
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }
+        else if (input[0].equals("FORF:")) {
+            if (input.length == 2) {
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        Main.chatWindow.gameEvent(input[1] + " forfeits!");
+                        Main.getGame().endGame("win");
+                    }
+                });
+                return "ACKNL: \"" + inputString + "\"\r\n";
+            } else return errorArgs;
+        }
         else if (input[0].equals("TAKE:")){
             if (input.length == 2) {
                 Platform.runLater(new Runnable() {
@@ -89,6 +112,17 @@ public class ConnectionThread extends Thread {
                         Main.getGame().takeRemote(input[1].replace("_", " "));
                     }
                 });
+                return "ACKNL: \"" + inputString + "\"\r\n";
+            } else return errorArgs;
+        }
+        else if (input[0].equals("QUIT:")){
+            if (input.length == 2) {
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        Main.chatWindow.closeConnection();
+                    }
+                });
+                closeConnection();
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }

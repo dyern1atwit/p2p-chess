@@ -13,10 +13,15 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 
 import java.io.IOException;
 import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 
@@ -93,6 +98,15 @@ public class ChatWindow extends Application {
         this.stage.setScene(scene);
         this.stage.setResizable(false);
         this.stage.show();
+        if (isHost) {
+            gameEvent("Your local IP address is the following: ");
+            for (String s : getLocalIPs()) {
+                gameEvent(s);
+            }
+            gameEvent("If you have port forwarding enabled,");
+            gameEvent("your external IP is the following:");
+            gameEvent(getPublicIP());
+        }
     }
 
     public void send(String msg) {
@@ -143,5 +157,55 @@ public class ChatWindow extends Application {
         Text message = new Text(msg);
         message.setFill(Color.BLUE);
         scrollBox.getChildren().add(message);
+    }
+    public void closeConnection() {
+        if (isHost) {
+            try {
+                serverThread.getConnectionThread().closeConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        else {
+            try {
+                connectionThread.closeConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    // solution from "roylaurie" on StackOverflow
+    // https://stackoverflow.com/questions/8083479/java-getting-my-ip-address
+    public ArrayList<String> getLocalIPs() throws SocketException {
+        ArrayList<String> localIPs = new ArrayList<String>();
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface iface = interfaces.nextElement();
+            // filters out 127.0.0.1 and inactive interfaces
+            if (iface.isLoopback() || !iface.isUp())
+                continue;
+
+            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            while(addresses.hasMoreElements()) {
+                InetAddress addr = addresses.nextElement();
+                String localIP = addr.getHostAddress();
+                for (char c : localIP.toCharArray()) {
+                    if (c == ':') localIP = null;
+                }
+                if (localIP != null) localIPs.add(localIP);
+            }
+        }
+        return localIPs;
+    }
+
+    // solution from "bakkal" on StackOverflow
+    // https://stackoverflow.com/questions/2939218/getting-the-external-ip-address-in-java
+    public String getPublicIP () throws IOException {
+        URL whatismyip = new URL("http://checkip.amazonaws.com");
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+                whatismyip.openStream()));
+        String externalIP = in.readLine();
+        return externalIP;
     }
 }

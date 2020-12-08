@@ -11,14 +11,16 @@ import java.net.Socket;
 public class ChatConnectionThread extends Thread {
     public BufferedReader inFromPeer;
     public DataOutputStream outToPeer;
+    public Socket connectionSocket;
 
     public ChatConnectionThread(Socket socket) throws IOException {
-        inFromPeer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        outToPeer = new DataOutputStream(socket.getOutputStream());
+        connectionSocket = socket;
+        inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
+        outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
 
     public ChatConnectionThread(String ip, int port) throws IOException {
-        Socket connectionSocket = new Socket(ip, port);
+        connectionSocket = new Socket(ip, port);
         inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
         outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
@@ -36,6 +38,9 @@ public class ChatConnectionThread extends Thread {
         }
     }
 
+    public void closeConnection() throws IOException {
+        connectionSocket.close();
+    }
 
     public void send(String s) throws IOException {
         outToPeer.writeBytes(s + "\r\n");
