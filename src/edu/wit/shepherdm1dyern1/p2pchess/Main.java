@@ -16,6 +16,7 @@ import javafx.stage.*;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.MapIterator;
@@ -36,7 +37,7 @@ public class Main extends Application {
     public static BidiMap<String, Node> whiteSprites;
     public BidiMap<String, Node> blackTaken;
     public BidiMap<String, Node> whiteTaken;
-    public String playerColor;
+    public static String playerColor;
     public static String turn = "white";
     public ArrayList<int[]> currentValid;
     public ConnectionThread clientConnection;
@@ -163,7 +164,6 @@ public class Main extends Application {
                 pos[1] = GridPane.getRowIndex(node.getParent().getParent());
                 pos[0] = GridPane.getColumnIndex(node.getParent().getParent());
             }
-
         }
         return pos;
     }
@@ -292,10 +292,14 @@ public class Main extends Application {
         StackPane destStack = (StackPane) dest.getParent();
         StackPane finalDest = destStack;
 
+
+
+        ///BETWEEN HERE
+        boolean taken = false;
         if((!(blackSprites.getKey(destStack)==null)&&playerColor.equals("white"))||(!(whiteSprites.getKey(destStack)==null)&&playerColor.equals("black"))){
             finalDest = (StackPane) destStack.getParent();
             takePiece(destStack);
-            chatWindow.gameEvent("Took "+getPieceName(destStack));
+            taken = true;
         }
 
         StackPane sourceStack = (StackPane) piece.getParent();
@@ -303,26 +307,54 @@ public class Main extends Application {
         sourceStack.getChildren().remove(piece);
         finalDest.getChildren().add(piece);
 
-        this.selectedNode = null;
-        if (turn.equals(playerColor)) {
-            if (isHost) {
-                try {
-                    this.serverConnection.getConnectionThread().send(s, true);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            else {
-                try {
-                    this.clientConnection.send(s, true);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+        StackPane whiteKing = (StackPane) whiteSprites.get("White King");
+        StackPane blackKing = (StackPane) blackSprites.get("Black King");
+        System.out.println(whiteKing + " " + blackKing);
+
+        boolean check;
+        if(playerColor.equals("white")){
+            check = checkCheck(getGridPos(whiteKing.getChildren().get(0), boardGrid), "white");
+        }
+        else{
+            check = checkCheck(getGridPos(blackKing.getChildren().get(0), boardGrid), "black");
         }
 
-        switchTurn();
+        if(check){
+            System.out.println("invalid move, your king is still in check");
+            sourceStack.getChildren().add(piece);
+            finalDest.getChildren().remove(piece);
+            if(taken){
+                finalDest.getChildren().add(destStack);
+            }
+            this.selectedNode = null;
+        }
+        else{
+            if(taken){
+                chatWindow.gameEvent("Took "+getPieceName(destStack));
+            }
+            this.selectedNode = null;
+            if (turn.equals(playerColor)) {
+                if (isHost) {
+                    try {
+                        this.serverConnection.getConnectionThread().send(s, true);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else {
+                    try {
+                        this.clientConnection.send(s, true);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
 
+            switchTurn();
+        }
+
+
+        ///AND HERE
     }
 
     public void movePiece(int x1, int y1, int x2, int y2) {
@@ -480,8 +512,6 @@ public class Main extends Application {
             turn="white";
         }
         System.out.println("switched turn to "+turn);
-        System.out.println("White is in check: " + checkCheck(getGridPos(whiteSprites.get("White King"), boardGrid), "white"));
-        System.out.println("Black is in check: " + checkCheck(getGridPos(blackSprites.get("Black King"), boardGrid), "black"));
     }
 
     //HOW PIECES MOVE BELOW
@@ -1035,6 +1065,9 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
+
+
+                //NEED SOME WAY OF KEEPING TRACK OF STUFF THAT'S NO LONGER ON THE BOARD (move to another bidimap? - will need to be done over networking)
                 ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "black");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
@@ -1049,6 +1082,9 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
+
+
+                //NEED SOME WAY OF KEEPING TRACK OF STUFF THAT'S NO LONGER ON THE BOARD (move to another bidimap? - will need to be done over networking)
                 ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "white");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
