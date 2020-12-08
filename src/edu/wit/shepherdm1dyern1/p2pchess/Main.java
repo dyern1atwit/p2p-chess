@@ -282,7 +282,7 @@ public class Main extends Application {
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
-        chatWindow.gameEvent(toChessMoves(piece.getParent(), dest));
+        //chatWindow.gameEvent(toChessMoves(piece.getParent(), dest));
 
         String s = "MOVE: ";
         if (turn.equals(playerColor)){
@@ -333,7 +333,7 @@ public class Main extends Application {
         StackPane sourceStack = (StackPane) getNode(x1, y1, boardGrid);
         StackPane destStack = (StackPane) getNode(x2, y2, boardGrid);
         StackPane piece = (StackPane) sourceStack.getChildren().get(1);
-        chatWindow.gameEvent(toChessMoves(piece, new int[] {x1, y1}, new int[] {x2, y2}));
+        //chatWindow.gameEvent(toChessMoves(piece, new int[] {x1, y1}, new int[] {x2, y2}));
         if(destStack.getChildren().size()>1){
             chatWindow.gameEvent("Took "+getPieceName(destStack.getChildren().get(1)));
             takePiece(destStack.getChildren().get(1));
@@ -521,7 +521,7 @@ public class Main extends Application {
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
                         valid.add(new int[]{pos[0]-1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -529,7 +529,7 @@ public class Main extends Application {
                     if((pos[0]+1)<=7){
                         stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
                         valid.add(new int[]{pos[0]+1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
