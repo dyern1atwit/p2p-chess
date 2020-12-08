@@ -35,8 +35,6 @@ public class Main extends Application {
     public int port;
     public static BidiMap<String, Node> blackSprites;
     public static BidiMap<String, Node> whiteSprites;
-    public BidiMap<String, Node> blackTaken;
-    public BidiMap<String, Node> whiteTaken;
     public static String playerColor;
     public static String turn = "white";
     public ArrayList<int[]> currentValid;
@@ -77,8 +75,6 @@ public class Main extends Application {
         selectedNode=null;
         blackSprites=null;
         whiteSprites=null;
-        blackTaken=null;
-        whiteTaken=null;
         playerColor=null;
         turn = "white";
         currentValid=null;
@@ -292,13 +288,11 @@ public class Main extends Application {
         StackPane destStack = (StackPane) dest.getParent();
         StackPane finalDest = destStack;
 
-
-
-        ///BETWEEN HERE
         boolean taken = false;
+        String takeName = null;
         if((!(blackSprites.getKey(destStack)==null)&&playerColor.equals("white"))||(!(whiteSprites.getKey(destStack)==null)&&playerColor.equals("black"))){
             finalDest = (StackPane) destStack.getParent();
-            takePiece(destStack);
+            takeName = takePiece(destStack);
             taken = true;
         }
 
@@ -325,12 +319,24 @@ public class Main extends Application {
             finalDest.getChildren().remove(piece);
             if(taken){
                 finalDest.getChildren().add(destStack);
+                if(takeName.startsWith("Black")){
+                    blackSprites.put(takeName, destStack);
+                }
+                else{
+                    whiteSprites.put(takeName, destStack);
+                }
             }
             this.selectedNode = null;
         }
         else{
             if(taken){
-                chatWindow.gameEvent("Took "+getPieceName(destStack));
+                try{
+                    this.serverConnection.getConnectionThread().send(("TAKE: " + takeName), true);
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+                chatWindow.gameEvent("Took "+ takeName.split("_")[0] + " " + takeName.split("_")[1]);
             }
             this.selectedNode = null;
             if (turn.equals(playerColor)) {
@@ -352,9 +358,6 @@ public class Main extends Application {
 
             switchTurn();
         }
-
-
-        ///AND HERE
     }
 
     public void movePiece(int x1, int y1, int x2, int y2) {
@@ -372,7 +375,7 @@ public class Main extends Application {
     }
 
     //method to take a piece, takes piece off the board, removes from "sprites" bidimap and adds to "taken" bidimap
-    public void takePiece(Node taken){
+    public String takePiece(Node taken){
         System.out.println(taken.getParent().getParent().getClass().getSimpleName());
         /*
         if (whiteSprites.containsValue(taken)) {
@@ -384,6 +387,25 @@ public class Main extends Application {
         */
         StackPane takenPane = (StackPane) taken.getParent();
         takenPane.getChildren().remove(taken);
+        String s = null;
+        if(blackSprites.containsValue(taken)){
+            s = blackSprites.getKey(taken).replace(" ", "_");
+            blackSprites.remove(blackSprites.getKey(taken), taken);
+        }
+        else if(whiteSprites.containsValue(taken)){
+            s = whiteSprites.getKey(taken).replace(" ", "_");
+            whiteSprites.remove(whiteSprites.getKey(taken), taken);
+        }
+        return s;
+    }
+
+    public void takeRemote(String taken){
+        if(blackSprites.containsValue(taken)){
+            blackSprites.remove(blackSprites.getKey(taken), taken);
+        }
+        else if(whiteSprites.containsValue(taken)){
+            whiteSprites.remove(whiteSprites.getKey(taken), taken);
+        }
     }
 
     public String toChessMoves(Node piece, Node dest){
@@ -544,7 +566,7 @@ public class Main extends Application {
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
                         valid.add(new int[]{pos[0]-1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -552,7 +574,7 @@ public class Main extends Application {
                     if((pos[0]+1)<=7){
                         stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
                         valid.add(new int[]{pos[0]+1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -585,7 +607,7 @@ public class Main extends Application {
                     if((pos[0]-1)>=0){
                         stack = (StackPane) getNode(pos[0]-1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
                         valid.add(new int[]{pos[0]-1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -593,7 +615,7 @@ public class Main extends Application {
                     if((pos[0]+1)<=7){
                         stack = (StackPane) getNode(pos[0]+1, pos[1], boardGrid);
                     }
-                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))&&i==0){
+                    if(stack.getChildren().size()>1&&canTake(pawn, stack.getChildren().get(1))){
                         valid.add(new int[]{pos[0]+1, pos[1]});
                         StackPane taking = (StackPane) stack.getChildren().get(1);
                         redBorder(taking.getChildren().get(1));
@@ -1065,9 +1087,6 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-
-
-                //NEED SOME WAY OF KEEPING TRACK OF STUFF THAT'S NO LONGER ON THE BOARD (move to another bidimap? - will need to be done over networking)
                 ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "black");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
@@ -1082,9 +1101,6 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-
-
-                //NEED SOME WAY OF KEEPING TRACK OF STUFF THAT'S NO LONGER ON THE BOARD (move to another bidimap? - will need to be done over networking)
                 ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "white");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
@@ -1110,7 +1126,6 @@ public class Main extends Application {
         gameOver(result);
         this.stage.setScene(gameOverScene);
     }
-
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
     public void loadNodes() {
         ArrayList<ImageView> images = new ArrayList<>();
@@ -1425,8 +1440,7 @@ public class Main extends Application {
     public Scene createChessBoard() {
         this.blackSprites = new DualHashBidiMap<>(){};
         this.whiteSprites = new DualHashBidiMap<>();
-        this.blackTaken = new DualHashBidiMap<>(){};
-        this.whiteTaken = new DualHashBidiMap<>();
+
 
         BorderPane root = new BorderPane();
         StackPane stack = new StackPane();

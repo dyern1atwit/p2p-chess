@@ -82,6 +82,16 @@ public class ConnectionThread extends Thread {
                 return "ACKNL: \"" + inputString + "\"\r\n";
             } else return errorArgs;
         }
+        else if (input[0].equals("TAKE:")){
+            if (input.length == 2) {
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        Main.getGame().takeRemote(input[1].replace("_", " "));
+                    }
+                });
+                return "ACKNL: \"" + inputString + "\"\r\n";
+            } else return errorArgs;
+        }
         else if (input[0].equals("ACKNL:")) return "";
         else if (input[0].equals("ERROR:")) return "";
         else return errorNotFound;
