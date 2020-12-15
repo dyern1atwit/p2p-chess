@@ -38,5 +38,5 @@ In order to win, you must put your opponenet in a place where they cannot move o
 that can move them out of check they must press the "Forfeit" button (or be stuck indefinitely.) If you are in check and you have no valid moves, you must do
 the same. 
 
-You can also press the "Forfiet" button at any time to end the game and declare your opponent as the winner. You can then exit the game, and if you so wish,
+You can also press the "Forfeit" button at any time to end the game and declare your opponent as the winner. You can then exit the game, and if you so wish,
 start it up again to play once more.
