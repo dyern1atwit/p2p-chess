@@ -9,22 +9,26 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 
 public class ChatConnectionThread extends Thread {
-    public BufferedReader inFromPeer;
-    public DataOutputStream outToPeer;
-    public Socket connectionSocket;
+    public BufferedReader inFromPeer; //buffered reader from the chat socket
+    public DataOutputStream outToPeer; //output stream from the chat socket
+    public Socket connectionSocket; //chat socket
 
+    //constructor to make a chat connection thread given a server socket
     public ChatConnectionThread(Socket socket) throws IOException {
         connectionSocket = socket;
         inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
         outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
 
+    //overloaded constructor given an IP and a port rather than a socket, creates a socket instead
     public ChatConnectionThread(String ip, int port) throws IOException {
         connectionSocket = new Socket(ip, port);
         inFromPeer = new BufferedReader(new InputStreamReader(connectionSocket.getInputStream()));
         outToPeer = new DataOutputStream(connectionSocket.getOutputStream());
     }
 
+    //main run method of thread
+    @SuppressWarnings("InfiniteLoopStatement")
     @Override
     public void run() {
         while (true){
@@ -38,19 +42,18 @@ public class ChatConnectionThread extends Thread {
         }
     }
 
+    //closes the connection socket
     public void closeConnection() throws IOException {
         connectionSocket.close();
     }
 
+    //sends a given string over the connection socket
     public void send(String s) throws IOException {
         outToPeer.writeBytes(s + "\r\n");
     }
 
+    //sends a given string to the chat window
     public void sendToChat(String msg) {
-        Platform.runLater(new Runnable() {
-            @Override public void run() {
-                ChatWindow.thisChat.receive(msg, false);
-            }
-        });
+        Platform.runLater(() -> ChatWindow.thisChat.receive(msg, false));
     }
 }

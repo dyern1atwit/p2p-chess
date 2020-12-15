@@ -16,7 +16,6 @@ import javafx.stage.*;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Stack;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.MapIterator;
@@ -24,46 +23,40 @@ import org.apache.commons.collections4.bidimap.*;
 
 
 public class Main extends Application {
-    private static Main mainGame;
-    //public variables for easier helper access
-    public static GridPane boardGrid = new GridPane();
-    public static Stage stage;
-    public Scene chessBoard;
-    public Scene menu;
-    public Scene gameOverScene;
-    public Node selectedNode;
-    public int port;
-    public static BidiMap<String, Node> blackSprites;
-    public static BidiMap<String, Node> whiteSprites;
-    public static String playerColor;
-    public static String turn = "white";
-    public ArrayList<int[]> currentValid;
-    public static ConnectionThread clientConnection;
-    public ServerThread serverConnection;
-    public boolean isHost;
-    public static ChatWindow chatWindow;
-
-    /*
-    - do pieces
-    - change what buttons do
-    - implement networking
-    - player control
-     */
+    private static Main mainGame; //instance of main that is used for interfacing between the network and the game
+    public static GridPane boardGrid = new GridPane(); //main chess board
+    public static Stage stage; //current stage of the window
+    public Scene chessBoard; //scene that boardGrid sits on top of
+    public Scene menu; //main menu scene
+    public Scene gameOverScene; //game over scene
+    public Node selectedNode; //selected node from handleClickEvent
+    public int port; //port used to host the game
+    public static BidiMap<String, Node> blackSprites; //map of all of the black sprites
+    public static BidiMap<String, Node> whiteSprites; //map of all of the white sprites
+    public static String playerColor; //current player color
+    public static String turn = "white"; //current player's turn (always white at the beginning of a game)
+    public ArrayList<int[]> currentValid; //array of the current valid moves
+    public static ConnectionThread clientConnection; //connection thread of the client connection
+    public ServerThread serverConnection; //connection thread of the server connection
+    public boolean isHost; //boolean to show if client is host or not
+    public static ChatWindow chatWindow; //javafx application window for chat
 
     @Override
     public void start(Stage primaryStage){
-        this.stage = primaryStage;
+        stage = primaryStage;
         startGame();
     }
+
+    //The following section defines methods to start the game and ccreate winodws
 
     //cleans up public variables and resets game
     public void startGame() {
         this.menu = createMenu();
         this.chessBoard = createChessBoard();
-        this.stage.setTitle("Chess");
-        this.stage.setScene(menu);
-        this.stage.setResizable(false);
-        this.stage.show();
+        stage.setTitle("Chess");
+        stage.setScene(menu);
+        stage.setResizable(false);
+        stage.show();
     }
 
     //cleans up before restart
@@ -83,9 +76,9 @@ public class Main extends Application {
 
     //takes port and game scene, will be used later to handle creating new game on given port
     public void createGame (TextField port, Scene game) throws IOException {
-        this.playerColor = "white";
+        playerColor = "white";
         this.isHost = true;
-        this.stage.setScene(game);
+        stage.setScene(game);
         this.port = Integer.parseInt(port.getText());
         chatWindow = new ChatWindow("localhost", this.port, true);
         serverConnection = new ServerThread(this.port);
@@ -97,7 +90,7 @@ public class Main extends Application {
 
     //takes ip and game scene, will be used later to handle connecting to existing game
     public void joinGame (TextField ip, Scene game) throws IOException {
-        this.playerColor = "black";
+        playerColor = "black";
         this.isHost = false;
         boardGrid.setRotate(180);
         for (String key : blackSprites.keySet()) {
@@ -106,47 +99,19 @@ public class Main extends Application {
         for (String key : whiteSprites.keySet()) {
             whiteSprites.get(key).setRotate(180);
         }
-        this.stage.setScene(game);
+        stage.setScene(game);
         String connectingIP = ip.getText().split(":")[0];
         int connectingPort = Integer.parseInt(ip.getText().split(":")[1]);
         chatWindow = new ChatWindow(connectingIP, connectingPort, false);
-        this.clientConnection = new ConnectionThread(connectingIP, connectingPort);
-        this.clientConnection.setAsConnector();
-        this.clientConnection.start();
+        clientConnection = new ConnectionThread(connectingIP, connectingPort);
+        clientConnection.setAsConnector();
+        clientConnection.start();
         System.out.println("black, client");
         System.out.println(ip.getText());
         ip.clear();
     }
 
-    //takes menu scene, returns to menu, will be used later to disconnect - not used
-    /*
-    public void toMenu(Scene menu){
-        this.stage.setScene(menu);
-    }
-    */
-
-    //removed due to event handler
-    /*
-    gets position of a node given a mouseclick event
-    public int[] getGridPos (MouseEvent event, GridPane grid) {
-        int[] pos = new int[2];
-        Node clickedNode = event.getPickResult().getIntersectedNode();
-        if (clickedNode != grid) {
-            pos[0] = GridPane.getColumnIndex(clickedNode);
-            pos[1] = GridPane.getRowIndex(clickedNode);
-        }
-        return pos;
-    }
-    unnecesary due to mouse handler
-    */
-
-
-    /*
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-    Stage creation and stuff
-    Getter/helper methods
-    VVVVVVVVVVVVVVVVVVVVVV
-     */
+    //The following section defines helper methods to help with the game logic overall
 
     //gets position of node given node
     public int[] getGridPos (Node node, GridPane grid) {
@@ -188,7 +153,7 @@ public class Main extends Application {
             if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
-                getMoves(this.selectedNode.getParent(), boardGrid, "black");
+                getMoves(this.selectedNode.getParent(), "black");
             }
             else if (clickedNode == this.selectedNode) {
                 blackBorders();
@@ -199,7 +164,7 @@ public class Main extends Application {
             if (this.selectedNode==null){
                 greenBorder(clickedNode);
                 this.selectedNode = clickedNode;
-                getMoves(this.selectedNode.getParent(), boardGrid, "white");
+                getMoves(this.selectedNode.getParent(), "white");
             }
             else if (clickedNode == this.selectedNode) {
                 blackBorders();
@@ -266,21 +231,16 @@ public class Main extends Application {
         }
     }
 
-    /*
-    ^^^^^^^^^^^^^^^^^^^^^
-    Getter/helper methods
-    Actual chess stuff (piece movement, taking, move checking, etc)
-    VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
-    */
+    //The following section defines piece movement and logic
 
     //moves a node given piece (node being moved) and destination node (space/node clicked on) - switches turn after move
     public void movePiece(Node piece, Node dest){           //WILL NEED CONTINUOUS REWORK
         //chatWindow.gameEvent(toChessMoves(piece.getParent(), dest));
         String chessMove = toChessMoves(piece.getParent(), dest);
-        String s = "MOVE: ";
+        StringBuilder s = new StringBuilder("MOVE: ");
         if (turn.equals(playerColor)){
-            for (int i : getGridPos(piece, this.boardGrid)) s += Integer.toString(i) + " ";
-            for (int i : getGridPos(dest, this.boardGrid)) s += Integer.toString(i) + " ";
+            for (int i : getGridPos(piece, boardGrid)) s.append(i).append(" ");
+            for (int i : getGridPos(dest, boardGrid)) s.append(i).append(" ");
             System.out.println(s);
         }
         piece = piece.getParent();
@@ -337,14 +297,14 @@ public class Main extends Application {
             if (turn.equals(playerColor)) {
                 if (isHost) {
                     try {
-                        this.serverConnection.getConnectionThread().send(s, true);
+                        this.serverConnection.getConnectionThread().send(s.toString(), true);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
                 else {
                     try {
-                        this.clientConnection.send(s, true);
+                        clientConnection.send(s.toString(), true);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -355,6 +315,7 @@ public class Main extends Application {
         }
     }
 
+    //moves a node given starting coordinates and ending coordinates
     public void movePiece(int x1, int y1, int x2, int y2) {
 
         StackPane sourceStack = (StackPane) getNode(x1, y1, boardGrid);
@@ -394,6 +355,8 @@ public class Main extends Application {
         return s;
     }
 
+    //method used to take a piece when called by the network rather than the client
+    @SuppressWarnings("SuspiciousMethodCalls")
     public void takeRemote(String taken){
         if(blackSprites.containsValue(taken)){
             blackSprites.remove(blackSprites.getKey(taken), taken);
@@ -403,6 +366,7 @@ public class Main extends Application {
         }
     }
 
+    //outputs a string that represents where a piece moved to given the piece and the destination node (for example, "White Pawn c2 to c4")
     public String toChessMoves(Node piece, Node dest){
         String[] letters = new String[] {"a","b","c","d","e","f","g","h"};
         String s = "";
@@ -419,6 +383,7 @@ public class Main extends Application {
         return s;
     }
 
+    //overloaded method, uses piece and the starting position and ending position rather than the destination node
     public String toChessMoves(Node piece, int[] piecePos, int[] destPos){
         String[] letters = new String[] {"a","b","c","d","e","f","g","h"};
         String s = "";
@@ -430,6 +395,7 @@ public class Main extends Application {
         return s;
     }
 
+    //gets the name of a piece given a node (e.g. "White Pawn")
     public String getPieceName(Node piece){
         String s = "";
         String pieceName;
@@ -444,8 +410,8 @@ public class Main extends Application {
 
     }
 
-    //IMPORTANT method that determines where a clicked piece can move and highlights those spaces NOT FINISHED
-    public void getMoves(Node piece, GridPane grid, String player) {
+    //method that determines where a clicked piece can move and highlights those spaces
+    public void getMoves(Node piece, String player) {
 
         String pieceName;
 
@@ -460,24 +426,25 @@ public class Main extends Application {
                 currentValid = pawnMoves(piece, player);
                 break;
             case "Ro":
-                currentValid = rookMoves(piece, player);
+                currentValid = rookMoves(piece);
                 break;
             case "Qu":
-                currentValid = queenMoves(piece, player);
+                currentValid = queenMoves(piece);
                 break;
             case "Ki":
-                currentValid = kingMoves(piece, player);
+                currentValid = kingMoves(piece);
                 break;
             case "Bi":
-                currentValid = bishopMoves(piece, player);
+                currentValid = bishopMoves(piece);
                 break;
             case "Kn":
-                currentValid = knightMoves(piece, player);
+                currentValid = knightMoves(piece);
                 break;
         }
     }
 
-    public ArrayList<int[]> getMovesCheck(Node piece, GridPane grid, String player) {
+    //gets the moves for a given piece and checks each move to see if it is valid or not
+    public ArrayList<int[]> getMovesCheck(Node piece, String player) {
 
         String pieceName;
 
@@ -495,19 +462,19 @@ public class Main extends Application {
                 valid = pawnMoves(piece, player);
                 break;
             case "Ro":
-                valid = rookMoves(piece, player);
+                valid = rookMoves(piece);
                 break;
             case "Qu":
-                valid = queenMoves(piece, player);
+                valid = queenMoves(piece);
                 break;
             case "Ki":
-                valid = kingMoves(piece, player);
+                valid = kingMoves(piece);
                 break;
             case "Bi":
-                valid = bishopMoves(piece, player);
+                valid = bishopMoves(piece);
                 break;
             case "Kn":
-                valid = knightMoves(piece, player);
+                valid = knightMoves(piece);
                 break;
         }
         return valid;
@@ -517,11 +484,6 @@ public class Main extends Application {
     public boolean canTake(Node taker, Node taken){
         return (whiteSprites.containsValue(taker) && blackSprites.containsValue(taken)) || (blackSprites.containsValue(taker) && whiteSprites.containsValue(taken));
     }
-
-    /*STUB METHOD FOR PAWN PROMOTION - unfinished
-    public void promotePawn(Node pawn){
-    }
-     */
 
     //helper method to swap which player's turn it is
     public void switchTurn(){
@@ -534,7 +496,7 @@ public class Main extends Application {
         System.out.println("switched turn to "+turn);
     }
 
-    //HOW PIECES MOVE BELOW
+    //The following section defines piece movement
 
     //pawn movement method
     public ArrayList<int[]> pawnMoves(Node pawn, String player){
@@ -628,7 +590,7 @@ public class Main extends Application {
     }
 
     //bishop movement method
-    public ArrayList<int[]> bishopMoves(Node bishop, String player){
+    public ArrayList<int[]> bishopMoves(Node bishop){
         ArrayList<int[]> valid = new ArrayList<>();
         int[] pos = new int[]{getGridPos(bishop, boardGrid)[0], getGridPos(bishop, boardGrid)[1]};
         int[] tmpPos = new int[]{getGridPos(bishop, boardGrid)[0], getGridPos(bishop, boardGrid)[1]};
@@ -698,7 +660,7 @@ public class Main extends Application {
     }
 
     //rook movement method
-    public ArrayList<int[]> rookMoves(Node rook, String player){
+    public ArrayList<int[]> rookMoves(Node rook){
         ArrayList<int[]> valid = new ArrayList<>();
         int[] pos = new int[]{getGridPos(rook, boardGrid)[0], getGridPos(rook, boardGrid)[1]};
         int[] tmpPos = new int[]{getGridPos(rook, boardGrid)[0], getGridPos(rook, boardGrid)[1]};
@@ -770,7 +732,7 @@ public class Main extends Application {
     }
 
     //queen movement method
-    public ArrayList<int[]> queenMoves(Node queen, String player){
+    public ArrayList<int[]> queenMoves(Node queen){
         ArrayList<int[]> valid = new ArrayList<>();
         int[] pos = new int[]{getGridPos(queen, boardGrid)[0], getGridPos(queen, boardGrid)[1]};
         int[] tmpPos = new int[]{getGridPos(queen, boardGrid)[0], getGridPos(queen, boardGrid)[1]};
@@ -902,7 +864,7 @@ public class Main extends Application {
     }
 
     //knight movement method
-    public ArrayList<int[]> knightMoves(Node knight, String player){
+    public ArrayList<int[]> knightMoves(Node knight){
         ArrayList<int[]> valid = new ArrayList<>();
         int[] pos = new int[]{getGridPos(knight, boardGrid)[0], getGridPos(knight, boardGrid)[1]};
         int[] tmpPos = new int[]{getGridPos(knight, boardGrid)[0], getGridPos(knight, boardGrid)[1]};
@@ -1036,31 +998,31 @@ public class Main extends Application {
     }
 
     //king movement method
-    public ArrayList<int[]> kingMoves(Node king, String player){
+    public ArrayList<int[]> kingMoves(Node king){
         int[] pos = new int[]{getGridPos(king, boardGrid)[0], getGridPos(king, boardGrid)[1]};
         int[] tmpPos = new int[]{getGridPos(king, boardGrid)[0], getGridPos(king, boardGrid)[1]};
         ArrayList<int[]> valid = new ArrayList<>();
         tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1];
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1]-1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]+1; tmpPos[1]=pos[1]+1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]; tmpPos[1]=pos[1]+1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]; tmpPos[1]=pos[1]-1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1];
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1]-1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         tmpPos[0]=pos[0]-1; tmpPos[1]=pos[1]+1;
-        kingHelper(king, tmpPos, valid, player);
+        kingHelper(king, tmpPos, valid);
         return valid;
     }
 
     //helper method for circling the king
-    private void kingHelper(Node king, int[] pos, ArrayList<int[]> valid, String player) {
+    private void kingHelper(Node king, int[] pos, ArrayList<int[]> valid) {
         StackPane stack;
         if(pos[0]>=0&&pos[0]<=7&&pos[1]>=0&&pos[1]<=7){
             stack = (StackPane) getNode(pos[0], pos[1], boardGrid);
@@ -1085,7 +1047,7 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-                ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "black");
+                ArrayList<int[]> validMoves = getMovesCheck(piece, "black");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
                         blackBorders();
@@ -1099,7 +1061,7 @@ public class Main extends Application {
             while (iterator.hasNext()) {
                 iterator.next();
                 StackPane piece = (StackPane) iterator.getValue();
-                ArrayList<int[]> validMoves = getMovesCheck(piece, boardGrid, "white");
+                ArrayList<int[]> validMoves = getMovesCheck(piece, "white");
                 for (int[] validMove : validMoves) {
                     if (validMove[0] == kingPos[0] && validMove[1] == kingPos[1]) {
                         blackBorders();
@@ -1112,21 +1074,16 @@ public class Main extends Application {
         return false;
     }
 
-    /*
-    ^^^^^^^^^^^^^^^^^^^^^
-    Actual chess stuff (piece movement, taking, move checking, etc)
-    preload/creation stuff
-    VVVVVVVVVVVVVVVVVVVVV
-    */
+    //The following section defines methods to create the game and game menu
 
     //ends game
     public void endGame(String result){
         gameOver(result);
-        this.stage.setScene(gameOverScene);
+        stage.setScene(gameOverScene);
     }
+
     //loads images into imageview objects, overlays them with transparent rectangle inside a stackpane for easier border support
     public void loadNodes() {
-        ArrayList<ImageView> images = new ArrayList<>();
         String basePath;
         if(System.getProperty("os.name").startsWith("Linux")){
             basePath = ((new File("").getAbsolutePath()) + "/src/edu/wit/shepherdm1dyern1/p2pchess/images/");
@@ -1178,7 +1135,7 @@ public class Main extends Application {
                             surfaceRect.setStrokeWidth(2);
                             StackPane piece = new StackPane();
                             piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img, piece);
+                            blackSprites.put(img, piece);
                         }
                         else if(img.startsWith("Qu", 6)){
                             ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
@@ -1187,7 +1144,7 @@ public class Main extends Application {
                             surfaceRect.setStrokeWidth(2);
                             StackPane piece = new StackPane();
                             piece.getChildren().addAll(image, surfaceRect);
-                            this.blackSprites.put(img, piece);
+                            blackSprites.put(img, piece);
 
                         }
                     }
@@ -1219,7 +1176,7 @@ public class Main extends Application {
                             surfaceRect.setStrokeWidth(2);
                             StackPane piece = new StackPane();
                             piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img, piece);
+                            whiteSprites.put(img, piece);
                         }
                         else if(img.startsWith("Qu", 6)){
                             ImageView image = new ImageView(new Image(new FileInputStream(basePath + file.getName())));
@@ -1228,7 +1185,7 @@ public class Main extends Application {
                             surfaceRect.setStrokeWidth(2);
                             StackPane piece = new StackPane();
                             piece.getChildren().addAll(image, surfaceRect);
-                            this.whiteSprites.put(img, piece);
+                            whiteSprites.put(img, piece);
                         }
                     }
                 }
@@ -1248,7 +1205,7 @@ public class Main extends Application {
             surfaceRect.setStrokeWidth(2);
             StackPane piece = new StackPane();
             piece.getChildren().addAll(image, surfaceRect);
-            this.whiteSprites.put(img+" "+i, piece);
+            whiteSprites.put(img+" "+i, piece);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -1264,7 +1221,7 @@ public class Main extends Application {
             surfaceRect.setStrokeWidth(2);
             StackPane piece = new StackPane();
             piece.getChildren().addAll(image, surfaceRect);
-            this.blackSprites.put(img+" "+i, piece);
+            blackSprites.put(img+" "+i, piece);
         }
         catch (Exception e){
             e.printStackTrace();
@@ -1429,8 +1386,8 @@ public class Main extends Application {
                 }
                 else {
                     try {
-                        this.clientConnection.send("QUIT: "+playerColor, true);
-                        this.clientConnection.closeConnection();
+                        clientConnection.send("QUIT: "+playerColor, true);
+                        clientConnection.closeConnection();
                         chatWindow.closeConnection();
                     } catch (IOException ex) {
                         ex.printStackTrace();
@@ -1455,8 +1412,8 @@ public class Main extends Application {
 
     //creates main chessboard/game scene and defines what buttons do, etc
     public Scene createChessBoard() {
-        this.blackSprites = new DualHashBidiMap<>(){};
-        this.whiteSprites = new DualHashBidiMap<>();
+        blackSprites = new DualHashBidiMap<>(){};
+        whiteSprites = new DualHashBidiMap<>();
 
 
         BorderPane root = new BorderPane();
@@ -1469,10 +1426,10 @@ public class Main extends Application {
         forfeit.setPrefSize(100, 20);
         forfeit.setOnAction(e -> {
             try {
-                String printColor = "";
+                StringBuilder printColor = new StringBuilder();
                 for (int i = 0; i < playerColor.toCharArray().length; i++){
-                    if (i == 0) printColor += Character.toUpperCase(playerColor.toCharArray()[i]);
-                    else printColor += playerColor.toCharArray()[i];
+                    if (i == 0) printColor.append(Character.toUpperCase(playerColor.toCharArray()[i]));
+                    else printColor.append(playerColor.toCharArray()[i]);
                 }
                 if (isHost) {
                     try {
@@ -1483,7 +1440,7 @@ public class Main extends Application {
                 }
                 else {
                     try {
-                        this.clientConnection.send("FORF: "+printColor, true);
+                        clientConnection.send("FORF: "+printColor, true);
                     } catch (IOException ex) {
                         ex.printStackTrace();
                     }
@@ -1526,15 +1483,15 @@ public class Main extends Application {
         VBox testbuttons = new VBox();
         testbuttons.getChildren().addAll(forfeit);
         root.setRight(testbuttons);
-        //menuButton.setOnAction(e -> toMenu(menu)); //CHANGE ME
         return new Scene(root, 726, 616);
     }
 
     public static void main(String[] args) {
         mainGame = new Main();
-        mainGame.launch(args);
+        launch(args);
     }
 
+    //returns the static game
     public static Main getGame(){
         return mainGame;
     }

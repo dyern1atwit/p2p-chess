@@ -22,24 +22,23 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 
 
 public class ChatWindow extends Application {
-    public int port;
-    public String ip;
-    public Stage stage;
-    public Scene scene;
-    private BorderPane base;
-    public ScrollPane scroll;
-    public VBox scrollBox;
-    TextField msgField;
-    public boolean isHost;
-    public static ChatServerThread serverThread;
-    public static ChatConnectionThread connectionThread;
-    public static ChatWindow thisChat;
+    public int port; //port that the chat window is running ojn
+    public String ip; //ip that the chat window is running on
+    public Stage stage; //main running stage
+    public Scene scene; //main running scene
+    public ScrollPane scroll; //pane where text is displayed
+    public VBox scrollBox; //scrollbar
+    TextField msgField; //text input field
+    public boolean isHost; //boolean to show if client is host or not
+    public static ChatServerThread serverThread; //chat server thread
+    public static ChatConnectionThread connectionThread; //chat connection thread
+    public static ChatWindow thisChat; //instance of this class that is used for interfacing
 
+    //constructor that creates the chat window and sets local variables to given arguments
     public ChatWindow(String ip, int port, boolean isHost) throws IOException {
         this.ip = ip;
         this.port = port+1;
@@ -53,17 +52,18 @@ public class ChatWindow extends Application {
     public void start(Stage stage) {
     }
 
+    //creates the chat window
     private void startChat() throws IOException {
         if (isHost) {
             serverThread = new ChatServerThread(port);
-            serverThread.start();;
+            serverThread.start();
 
         }
         else {
             connectionThread = new ChatConnectionThread(ip, port);
             connectionThread.start();
         }
-        base = new BorderPane();
+        BorderPane base = new BorderPane();
         scroll = new ScrollPane();
         HBox entry = new HBox();
         scrollBox = new VBox();
@@ -109,8 +109,8 @@ public class ChatWindow extends Application {
         }
     }
 
+    //sends a given message to the other player and adds message to current player's chat
     public void send(String msg) {
-        //add stuff here to send msg string to other client (sending it to their "recieve" method !!!!!!!!!!!!!!!!!!!!!!!
         if (isHost) {
             try {
                 serverThread.getConnectionThread().send(msg);
@@ -128,7 +128,8 @@ public class ChatWindow extends Application {
         receive(msg, true);
         msgField.clear();
     }
-    //msg will need to be input from some socket/thread elsewhere (msg will come from other client's "send" method
+
+    //adds a received message from the other player
     public void receive(String msg, boolean isMe){
         if (isHost) {
             if (isMe) {
@@ -153,11 +154,15 @@ public class ChatWindow extends Application {
             }
         }
     }
+
+    //adds a game event to the chat window in blue
     public void gameEvent(String msg) {
         Text message = new Text(msg);
         message.setFill(Color.BLUE);
         scrollBox.getChildren().add(message);
     }
+
+    //closes the chat connection
     public void closeConnection() {
         if (isHost) {
             try {
@@ -175,10 +180,11 @@ public class ChatWindow extends Application {
         }
     }
 
-    // solution from "roylaurie" on StackOverflow
-    // https://stackoverflow.com/questions/8083479/java-getting-my-ip-address
+    //gets the local ip of the host
+    //solution from "roylaurie" on StackOverflow
+    //https://stackoverflow.com/questions/8083479/java-getting-my-ip-address
     public ArrayList<String> getLocalIPs() throws SocketException {
-        ArrayList<String> localIPs = new ArrayList<String>();
+        ArrayList<String> localIPs = new ArrayList<>();
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()) {
             NetworkInterface iface = interfaces.nextElement();
@@ -191,7 +197,10 @@ public class ChatWindow extends Application {
                 InetAddress addr = addresses.nextElement();
                 String localIP = addr.getHostAddress();
                 for (char c : localIP.toCharArray()) {
-                    if (c == ':') localIP = null;
+                    if (c == ':') {
+                        localIP = null;
+                        break;
+                    }
                 }
                 if (localIP != null) localIPs.add(localIP);
             }
@@ -199,13 +208,13 @@ public class ChatWindow extends Application {
         return localIPs;
     }
 
-    // solution from "bakkal" on StackOverflow
-    // https://stackoverflow.com/questions/2939218/getting-the-external-ip-address-in-java
+    //gets the public ip of the host
+    //solution from "bakkal" on StackOverflow
+    //https://stackoverflow.com/questions/2939218/getting-the-external-ip-address-in-java
     public String getPublicIP () throws IOException {
         URL whatismyip = new URL("http://checkip.amazonaws.com");
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 whatismyip.openStream()));
-        String externalIP = in.readLine();
-        return externalIP;
+        return in.readLine();
     }
 }
