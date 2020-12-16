@@ -1,7 +1,15 @@
 # P2P Chess
-### Created by P2Peers for Network Programming (COMP-2100) at Wentworth Institute of Technology
+
+## Introduction
 
 This is a simple peer-to-peer chess game designed to take the hassle out of connecting to a server every time you and your friend want to play a game of chess.
+
+## Features
+* Chess Game
+* Chatting
+* Move history
+* Forfeitting
+
 ## Starting the game
 
 ![alt text](https://github.com/dyern1atwit/p2p-chess/raw/master/readme_images/create.gif "Creating Game")
@@ -40,3 +48,11 @@ the same.
 
 You can also press the "Forfeit" button at any time to end the game and declare your opponent as the winner. You can then exit the game, and if you so wish,
 start it up again to play once more.
+
+## Demo Video
+
+https://www.youtube.com/watch?v=QJ7oBEv013Y
+
+## Contributors
+* Michael Shepherd
+* Nicholas Dyer
